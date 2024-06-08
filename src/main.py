@@ -1,29 +1,37 @@
-# import pygame package
 import pygame
+import sys
 
-# initializing imported module
+# Initialize Pygame
 pygame.init()
 
-# displaying a window of height
-# 500 and width 400
-pygame.display.set_mode((400, 500))
-
-# Setting name for window
-pygame.display.set_caption('GeeksforGeeks')
+# Set up the display
+screen_width, screen_height = 1920, 1080
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption('Draw Image Example')
+# Load the image
+image = pygame.image.load('SemesterGameJam/assets/page_1.png')
 
 # creating a bool value which checks
 # if game is running
 running = True
 
-# Game loop
-# keep game running till running is true
+# Main loop
+running = True
 while running:
-
-    # Check for event if user has pushed
-    # any event in queue
     for event in pygame.event.get():
-
-        # if event is of type quit then set
-        # running bool to false
         if event.type == pygame.QUIT:
             running = False
+
+    # Clear the screen
+    screen.fill((0, 0, 0))  # Fill with black color
+
+    # Draw the image at the specified position (x, y)
+    x, y = 100, 100
+    screen.blit(image, (x, y))
+
+    # Update the display
+    pygame.display.flip()
+
+# Quit Pygame
+pygame.quit()
+sys.exit()
