@@ -1,0 +1,8 @@
+start,meadows
+The player runs aimlessly around in the meadows and eventually loses himself in there. Describe his fate and especially his miserable death!
+start,forest
+It required a lot of bravery to go inside the cursed forest. But the creatures in there did not respect that. Describe the player's fate and especially his gruesome death!
+willow_tree,continue
+The hero continued on his or her quest but unfortunately no one ever heard the full story, so we can not say whether he/she was successful...
+willow_tree,flee
+This was a terrible act of cowardice and once he turned his back, a witch dagger pierced into his neck!
