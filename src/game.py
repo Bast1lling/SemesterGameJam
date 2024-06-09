@@ -2,7 +2,7 @@ import os
 import json
 
 from src.config import Configuration
-from src.llm import ImmersionLLM
+from src.llm import ImmersionLLM, ConversationLLM
 from src.scene import Scene, Action, SceneLLM
 
 
@@ -101,6 +101,27 @@ class EndState(State):
         return "No matter how much you cry, the game is over... sorry!", "end"
 
 
+class DialogueState(State):
+    def __init__(self, config: Configuration, setting: str):
+        super().__init__(config, "end_state", None)
+        character = "The witches are not very talkative and only respond to make fun of him or to insult him."
+        self.llm = ConversationLLM(self.config.gpt_version, self.config.openai_api_key, character, setting)
+
+    def describe(self) -> str:
+        return ""
+
+    def evaluate(self, user_input: str) -> (str, str):
+        response = self.llm.query(user_input)
+        action_name = "talk"
+        if "state" in response.keys():
+            if response["state"] == "stop":
+                action_name = "stop_dialogue"
+        text = ""
+        if "response" in response.keys():
+            text = response["response"]
+        return text, action_name
+
+
 class TransitionModel:
     def __init__(self, src: State):
         self.src = src
@@ -108,6 +129,7 @@ class TransitionModel:
             "scene": src,
             "advice": src,
             "self": src,
+            "troll": src,
             "failure": src,
         }
 

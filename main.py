@@ -2,8 +2,6 @@ import re
 
 from src.config import Configuration
 from src.game import Story
-from textual.app import App
-from textual.widgets import Header, Footer, Input
 
 
 def print_text(s: str, color: str):
@@ -34,6 +32,8 @@ class Game:
 
     def run(self):
         # run question-answer cycle:
+        intro = "Welcome to TextAdventureGPT! Just write what you want to do, ask for information or just troll."
+        print_text(intro, "blue")
         while True:
             question = self.story.question()
             print_text(question, "blue")

@@ -1,11 +1,5 @@
 When you open your eyes, you see blades of grass in front of you. You are lying in the middle of a meadow through which a small country lane winds its way.
 Heavy, gray clouds hang over you, a storm is brewing. The wind ruffles your hair and whips through the grass. The path is right in front of you, it is unpaved and consists of sand and gravel. If you follow it to the right, you soon come across a large, old willow tree rooted to the side of the path. Deep black and mighty, it towers up into the sky and braces itself against the force of the wind. If you follow the path to the left, it doesn't take long until you come to the edge of a huge, dark forest. In front of and behind you are nothing but endless meadows.
-scene
-The player investigates his surroundings by asking questions about the scene.
-
-advice
-The player seeks for advice. If you can not answer his questions, tell him that you do not know everything and he should continue asking questions.
-
 self
 The player wants to know something about himself.
 All you know is that you are still very sleepy.

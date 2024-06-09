@@ -49,6 +49,13 @@ class Scene(Describer):
         super().__init__(description, answer)
         self.name = name
         self.actions = actions
+        self.actions.append(Action("scene", "The player investigates his surroundings by asking questions about the "
+                                            "scene.", None))
+        self.actions.append(Action("troll", "The player wants to simply troll the Game Master, break the 4th wall or "
+                                            "mess around. Try to respond with the right amount of wit!", None))
+        self.actions.append(Action("advice", "The player seeks for advice. If you can not answer his questions, "
+                                             "tell him that you do not know everything and he should continue asking "
+                                             "questions.", None))
         self.actions.append(Action("failure", "The user input is not clear enough.",
                                    "What are you talking about...? You need to ask questions and stop trolling me :("))
 

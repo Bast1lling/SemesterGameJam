@@ -228,3 +228,42 @@ class ImmersionLLM(LLM):
         history += user_input + "\n"
         self.user_prompt.set("history", history)
         return self._query()
+
+
+class ConversationLLM(LLM):
+    def __init__(self, gpt_version, api_key, character_descr, setting):
+        super().__init__(gpt_version, api_key, False, None, None, None)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+
+        self.llm_function = LLMFunction()
+        self.llm_function.add_string_parameter("state", "conversation state")
+        self.llm_function.add_string_parameter("response", "response to user")
+
+        with open(os.path.join(script_dir, "prompts/conversation_system.txt"), "r") as file:
+            self.system_prompt = SystemPrompt(file.read())
+
+        self.user_prompt_structure = [
+            "task",
+            "setting",
+            "character",
+            "history",
+            "user",
+        ]
+        self.user_prompt = Prompt(self.user_prompt_structure)
+        with open(os.path.join(script_dir, "prompts/conversation.txt"), "r") as file:
+            self.user_prompt.set("task", file.read())
+        self.user_prompt.set("setting", setting)
+        self.user_prompt.set("character", character_descr)
+        history_content = "This is the conversation so far:\n"
+        self.user_prompt.set("history", history_content)
+
+    def query(self, user_input):
+        history = self.user_prompt.get("history")
+        user_content = f"This is the new response by the player: {user_input}"
+        self.user_prompt.set("user", user_content)
+        response = self._query()
+        if "response" in response.keys():
+            history += f"Player: {user_input}\n"
+            history += f"Character: {response}\n"
+            self.user_prompt.set("history", history)
+        return response

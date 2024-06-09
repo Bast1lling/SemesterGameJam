@@ -1,11 +1,5 @@
 As you follow the path to the right, you soon come across a large, old willow tree. The tree's branches sway gently in the wind, casting eerie shadows on the ground.
 The tree is deep black and mighty, towering up into the sky and bracing itself against the force of the wind. Beneath its sprawling branches, three figures are standing. They are three witches, dressed in tattered robes, their eyes gleaming with an unnatural light. Once they notice the player, they begin to speak in unison, their voices merging into a haunting chorus. "The winds whisper your fate," they intone. "Ahead lies a powerful castle, where an old king resides. Beware, for murder and betrayal lurk in the shadows. Your path is fraught with peril, and only the brave will prevail." The witches continue to hint at future events, speaking of a quest that will test your courage and resolve. Their words are cryptic, filled with foreboding, leaving you with a sense of unease and anticipation.
-scene
-The player investigates his surroundings by asking questions about the scene.
-
-advice
-The player seeks for advice. If you can not answer his questions, tell him that you do not know everything and he should continue asking questions.
-
 self
 The player wants to know something about himself. You can tell him about the creeping fear which gets a hold of him and the impulse to reach for a weapon. But there is none...
 
