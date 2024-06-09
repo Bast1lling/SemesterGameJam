@@ -11,9 +11,9 @@ def debug_msg(s: str, config: Configuration):
         print(s)
 
 
-def load_scene(name: str) -> Scene:
+def load_scene(name: str, story="macbeth") -> Scene:
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(script_dir, f"prompts/story/{name}.txt"), "r") as file:
+    with open(os.path.join(script_dir, f"stories/{story}/story/{name}.txt"), "r") as file:
         content = file.read()
         lines = content.split('\n')
         i = 0
@@ -166,9 +166,9 @@ class Story:
                 return state
         raise ValueError("There is no such state in the story!")
 
-    def load_ending(self, state_name: str, action_name: str) -> EndState:
+    def load_ending(self, state_name: str, action_name: str, story="macbeth") -> EndState:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(script_dir, f"prompts/story/endings.txt"), "r") as file:
+        with open(os.path.join(script_dir, f"stories/{story}/story/endings.txt"), "r") as file:
             content = file.read()
             lines = content.split('\n')
             key = f"{state_name},{action_name}"
@@ -179,9 +179,9 @@ class Story:
                 else:
                     i += 1
 
-    def load_model(self, state_name: str) -> TransitionModel:
+    def load_model(self, state_name: str, story="macbeth") -> TransitionModel:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(script_dir, f"models/{state_name}.json")
+        path = os.path.join(script_dir, f"stories/{story}/models/{state_name}.json")
         src = self.get_state(state_name)
         actions = src.scene.actions
         actions = [action.name for action in actions]
