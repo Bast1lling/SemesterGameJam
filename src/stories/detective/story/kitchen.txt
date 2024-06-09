@@ -1,0 +1,11 @@
+The kitchen is very tidy. You can hardly find any dirt in here. There is a work space at the end of the room and on the left side are all work stations.
+The kitchen is immaculate, almost unnaturally so. The stainless steel countertops gleam under the bright overhead lights, and the tiled floor looks like it has been freshly scrubbed. The scent of lemon cleaning products lingers in the air. There is a large island workspace at the end of the room, adorned with a single, pristine cutting board and an array of sharp, well-maintained knives neatly arranged in a wooden block. The left side of the kitchen houses all the workstations, including a state-of-the-art oven, a sleek refrigerator, and a spotless sink with no dishes in sight.
+self
+The player is a famous detective who needs to solve the mysterious death of a dutch police officer. He wears a huge black hat.
+
+countertop
+The player wants to investigate the countertop. It smells very strange. But you can not see anything. If he asks a second time about it he will get this hint: "The countertop smells not only like cleaning solution but also like alcohol"
+
+knifes
+The player can go to the knifes and look at them.
+You step towards the knifes to take a closer look.

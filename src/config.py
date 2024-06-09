@@ -19,3 +19,4 @@ class Configuration:
     debug = True
     save_traffic = True
     save_mode = False
+    story = "detective"

@@ -144,7 +144,14 @@ class Story:
     def __init__(self, config: Configuration):
         self.config = config
         # load scenes and states
-        scenes = [load_scene("start"), load_scene("willow_tree")]
+        if self.config.story == "macbeth":
+            scenes = [load_scene("start"), load_scene("willow_tree")]
+        else:
+            scenes = [
+                load_scene("start", story=self.config.story),
+                load_scene("kitchen", story=self.config.story),
+                load_scene("living_room", story=self.config.story),
+                      ]
         # configure FSA
         self.states = []
         self.models = {}
@@ -166,9 +173,9 @@ class Story:
                 return state
         raise ValueError("There is no such state in the story!")
 
-    def load_ending(self, state_name: str, action_name: str, story="macbeth") -> EndState:
+    def load_ending(self, state_name: str, action_name: str) -> EndState:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        with open(os.path.join(script_dir, f"stories/{story}/story/endings.txt"), "r") as file:
+        with open(os.path.join(script_dir, f"stories/{self.config.story}/story/endings.txt"), "r") as file:
             content = file.read()
             lines = content.split('\n')
             key = f"{state_name},{action_name}"
@@ -179,9 +186,9 @@ class Story:
                 else:
                     i += 1
 
-    def load_model(self, state_name: str, story="macbeth") -> TransitionModel:
+    def load_model(self, state_name: str) -> TransitionModel:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(script_dir, f"stories/{story}/models/{state_name}.json")
+        path = os.path.join(script_dir, f"stories/{self.config.story}/models/{state_name}.json")
         src = self.get_state(state_name)
         actions = src.scene.actions
         actions = [action.name for action in actions]
