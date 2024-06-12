@@ -18,5 +18,5 @@ class Configuration:
     mockup_openAI = False  # if true, drplanner will not use the openAI api
     debug = True
     save_traffic = True
-    save_mode = False
+    history = True
     story = "detective"

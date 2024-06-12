@@ -19,7 +19,9 @@ class Prompt:
     def get_structure(self):
         return self._content.keys()
 
-    def get(self, key):
+    def get(self, key) -> str:
+        if key not in self._content.keys():
+            return ""
         return self._content[key]
 
     def set(self, key, value):

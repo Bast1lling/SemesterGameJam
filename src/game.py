@@ -2,7 +2,7 @@ import os
 import json
 
 from src.config import Configuration
-from src.llm import ImmersionLLM, ConversationLLM
+from src.llm import StoryLLM, DialogueLLM
 from src.scene import Scene, Action, SceneLLM
 
 
@@ -90,7 +90,7 @@ class State:
 class EndState(State):
     def __init__(self, config: Configuration, story: str, setting: str):
         super().__init__(config, "end_state", None)
-        self.llm = ImmersionLLM(self.config.gpt_version, self.config.openai_api_key, story, setting)
+        self.llm = StoryLLM(self.config.gpt_version, self.config.openai_api_key, story, setting)
         self.last_input = ""
 
     def describe(self) -> str:
@@ -105,7 +105,7 @@ class DialogueState(State):
     def __init__(self, config: Configuration, setting: str):
         super().__init__(config, "end_state", None)
         character = "The witches are not very talkative and only respond to make fun of him or to insult him."
-        self.llm = ConversationLLM(self.config.gpt_version, self.config.openai_api_key, character, setting)
+        self.llm = DialogueLLM(self.config.gpt_version, self.config.openai_api_key, character, setting)
 
     def describe(self) -> str:
         return ""
