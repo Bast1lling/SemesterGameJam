@@ -10,7 +10,7 @@ class Configuration:
     load_dotenv(env_path)  # Load the .env file
 
     openai_api_key = os.getenv("API_KEY")  # your api key for openai
-    gpt_version = "gpt-4o"  # "gpt-4o" # "gpt-3.5-turbo-0125"  # "gpt-4-turbo-preview"  # "gpt-4-1106-preview"
+    gpt_version = "gpt-3.5-turbo"  # "gpt-4o" # "gpt-3.5-turbo-0125"  # "gpt-4-turbo-preview"  # "gpt-4-1106-preview"
 
     token_limit = 6000  # token limits
     temperature = 0.8  # temperature for the LLM

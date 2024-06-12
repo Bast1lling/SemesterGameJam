@@ -47,9 +47,12 @@ class LLMFunction:
         function_parameters_dict = {}
 
         self.parameters: dict = LLMFunction._object_parameter(function_parameters_dict)
+        self.parameters["type"] = "object"
 
     # transforms the function into a form required by the OpenAI api
     def get_function_as_list(self):
+        parameters = self.parameters["properties"]
+        self.parameters["required"] = list(parameters.keys())
         return [
             {
                 "name": "game_master_response",
