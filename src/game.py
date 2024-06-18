@@ -2,45 +2,12 @@ import os
 import json
 
 from src.config import Configuration
-from src.scene import Scene, Action, Character
+from src.scene import Scene, Character
 
 
 def debug_msg(s: str, config: Configuration):
     if config.debug:
         print(s)
-
-
-def load_scene(name: str, story="macbeth") -> Scene:
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(script_dir, f"stories/{story}/story/{name}.txt"), "r") as file:
-        content = file.read()
-        lines = content.split('\n')
-        i = 0
-        actions = []
-        while i < len(lines):
-            if i == 0:
-                answer = lines[i]
-            elif i == 1:
-                description = lines[i]
-            else:
-                action_name = lines[i]
-                action_description = lines[i + 1]
-                action_answer = [lines[i + 2]]
-
-                if len(action_answer[0]) <= 0:
-                    actions.append(Action(action_name, action_description, None))
-                    i = i + 3
-                    continue
-
-                i = i + 3
-                line = lines[i]
-                while len(line) > 0:
-                    action_answer.append(line)
-                    i += 1
-                    line = lines[i]
-                actions.append(Action(action_name, action_description, "".join(action_answer)))
-            i += 1
-        return Scene(name, description, answer, actions)
 
 
 class Game:
@@ -51,19 +18,23 @@ class Game:
         self.scenes = {}
 
         # load character files
-        path_to_characters = self.config.path_to_story + "characters/"
+        path_to_characters = os.path.join(self.config.path_to_story, "characters")
         files = os.listdir(path_to_characters)
         for file in files:
             if file.endswith('.json'):
-                self.parse_character_json(os.path.join(path_to_characters,file))
+                self.parse_character_json(os.path.join(path_to_characters, file))
 
         # load scene files
-        path_to_scenes = self.config.path_to_story + "scenes/"
+        path_to_scenes = os.path.join(self.config.path_to_story, "scenes")
         files = os.listdir(path_to_scenes)
         files = sorted(files)
+        jobs = []
         for file in files:
             if file.endswith('.json'):
-                self.parse_scene_json(os.path.join(path_to_scenes,file))
+                jobs.extend(self.parse_scene_json(os.path.join(path_to_scenes, file)))
+        for scene, target_scene, name, descr in jobs:
+            target_descr = self.scenes[target_scene].describe()
+            scene.add_simple_action_story(target_scene, target_descr, name, descr)
 
         # set first to current scene
         self.current_scene = list(self.scenes.values())[0]
@@ -89,6 +60,7 @@ class Game:
         characters = {k: self.characters[k] for k in character_names if k in self.characters}
         characters["self"] = self.characters["self"]
         scene = Scene(self.config, name, description, characters)
+        jobs = []
         for key, value in action_data.items():
             if "target_scene" in value.keys():
                 target_state = value["target_scene"]
@@ -97,11 +69,13 @@ class Game:
             if "effect" in value.keys():
                 scene.add_action_story(target_state, key, value["description"], value["effect"])
             else:
-                scene.add_action_story(target_state, key, value["description"], None)
+                args = (scene, target_state, key, value["description"])
+                jobs.append(args)
 
         for name in character_names:
             scene.add_action_talk(name, self.characters[name])
         self.scenes[name] = scene
+        return jobs
 
     def parse_character_json(self, path_to_character_file: str):
         character_data = Game.load_json(path_to_character_file)

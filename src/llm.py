@@ -163,7 +163,8 @@ class LLM(ABC):
         openai.api_key = api_key
         self.temperature = temperature
         self._save = save
-        self._save_dir = "/home/sebastian/Documents/gamejam/Data/"
+        # TODO configure this path if you want to save the prompts
+        self._save_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs")
 
     @abstractmethod
     def _get_user_prompt(self) -> str:
@@ -207,10 +208,10 @@ class LLM(ABC):
 
     # helper function to save both prompts and responses in a human-readable form
     def _save_iteration_as_txt(self, messages, content_json):
-        run_start_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-        text_filename_result = f"result_{run_start_time}.txt"
-        text_filename_prompt = f"prompt_{run_start_time}.txt"
-        txt_save_dir = self._save_dir + "text/"
+        identifier = self.__class__.__name__
+        text_filename_result = f"result_{identifier}.txt"
+        text_filename_prompt = f"prompt_{identifier}.txt"
+        txt_save_dir = os.path.join(self._save_dir, "text")
 
         if not os.path.exists(txt_save_dir):
             os.makedirs(txt_save_dir, exist_ok=True)
@@ -238,11 +239,10 @@ class LLM(ABC):
 
     # helper function to save both prompts and
     def _save_iteration_as_json(self, messages, content_json):
-        run_start_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-        identifier = str(type(self))
-        json_filename_result = f"result_{run_start_time}_{identifier}.txt"
-        json_filename_prompt = f"prompt_{run_start_time}_{identifier}.txt"
-        json_save_dir = self._save_dir + "json/"
+        identifier = self.__class__.__name__
+        json_filename_result = f"result_{identifier}.txt"
+        json_filename_prompt = f"prompt_{identifier}.txt"
+        json_save_dir = os.path.join(self._save_dir, "json")
         if not os.path.exists(json_save_dir):
             os.makedirs(json_save_dir, exist_ok=True)
         # save the prompt

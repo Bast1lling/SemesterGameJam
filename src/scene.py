@@ -143,11 +143,12 @@ class Scene(Describer):
         ]
         self.llm = ActionLLM(self.config, description, self._describe_actions())
 
-    def add_action_story(self, target_state: str, name: str, description: str, effect: Union[str, None]):
-        if effect:
-            self.actions.append(ActionStory(target_state, self.config, name, description, effect, self.describe()))
-        else:
-            self.actions.append(ActionSimpleStory(target_state, name, description))
+    def add_action_story(self, target_state: str, name: str, description: str, effect: str):
+        self.actions.append(ActionStory(target_state, self.config, name, description, effect, self.describe()))
+        self.llm = ActionLLM(self.config, description, self._describe_actions())
+
+    def add_simple_action_story(self, target_state: str, target_descr: str, name: str, description: str):
+        self.actions.append(ActionSimpleStory(target_state, target_descr, name, description))
         self.llm = ActionLLM(self.config, description, self._describe_actions())
 
     def add_action_talk(self, character_name, character_descr: str):
