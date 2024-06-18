@@ -1,18 +1,6 @@
 TODO:
-1. player should have knowledge base where all facts he already knows are written down
--> a fact is a piece of story
--> a new fact is added on account of a specialized llm
--> llm: current user input i, current model response o, knowledge base k -> fact f
-2. refactor llm:
--> one llm, multiple modes like scene, character, story
--> base class prompts are initialized with all possible prompt parts
--> add functionality to prompter to mix prompt parts according to input structure
--> move llm to story class
-3. conversation state:
--> expand available actions to charm, anger, etc.
-
-FUTURE FEATURES
-1. let llm determine scene welcome message based on knowledge base
-2. add items
-3. add multithreaded llm querying
-4. add LLama3 support
+1. add the concept of objects, items etc. which can be investigated, used etc.
+2. add the action talk which just means that the player wants to talk with the llm
+3. restructure action prompt completely
+--- ideas ---
+1. turn action["effect"] into a list to encourage continuous questions about the same object

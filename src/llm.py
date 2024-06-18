@@ -1,6 +1,6 @@
 # adapt from https://github.com/real-stanford/reflect
+import shutil
 from abc import ABC, abstractmethod
-from datetime import datetime
 import os
 from enum import Enum
 from typing import Union, Tuple
@@ -173,10 +173,13 @@ class LLM(ABC):
         openai.api_key = api_key
         self.temperature = temperature
         self._save = save
+        self._counter = 0
         # TODO configure this path if you want to save the prompts
         self._save_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs"
         )
+        shutil.rmtree(self._save_dir)
+        os.makedirs(self._save_dir, exist_ok=True)
 
     @abstractmethod
     def _retrieve_memory(self, user_input: str) -> list[Tuple[str, str]]:
@@ -185,6 +188,7 @@ class LLM(ABC):
     # send <messages> to the OpenAI api
     def _query(self, user_input="", not_required: Union[list, None] = None):
         matches = self._retrieve_memory(user_input)
+        print(f"matches: {len(matches)}")
         if len(matches) > 0:
             matches = [f"Player: {a} You: {b}" for a, b in matches]
             final = "\n".join(matches)
@@ -230,8 +234,9 @@ class LLM(ABC):
     # helper function to save both prompts and responses in a human-readable form
     def _save_iteration_as_txt(self, messages, content_json):
         identifier = self.__class__.__name__
-        text_filename_result = f"result_{identifier}.txt"
-        text_filename_prompt = f"prompt_{identifier}.txt"
+        text_filename_result = f"result_{identifier}_{self._counter}.txt"
+        text_filename_prompt = f"prompt_{identifier}_{self._counter}.txt"
+        self._counter += 1
         txt_save_dir = os.path.join(self._save_dir, "text")
 
         if not os.path.exists(txt_save_dir):
@@ -265,8 +270,8 @@ class LLM(ABC):
     # helper function to save both prompts and
     def _save_iteration_as_json(self, messages, content_json):
         identifier = self.__class__.__name__
-        json_filename_result = f"result_{identifier}.txt"
-        json_filename_prompt = f"prompt_{identifier}.txt"
+        json_filename_result = f"result_{identifier}_{self._counter}.json"
+        json_filename_prompt = f"prompt_{identifier}_{self._counter}.json"
         json_save_dir = os.path.join(self._save_dir, "json")
         if not os.path.exists(json_save_dir):
             os.makedirs(json_save_dir, exist_ok=True)
@@ -282,12 +287,12 @@ class LLM(ABC):
 
 class QuestionLLM(LLM):
     def _retrieve_memory(self, user_input: str):
-        question_match = self.memory.retrieve(user_input, n=1, min_similarity=0.25)
+        question_match = set(self.memory.retrieve(user_input, n=1, min_similarity=0.0))
         game_state_matches = self.memory.retrieve(
-            self.game_state, n=2, min_similarity=0.4
+            self.game_state, n=2, min_similarity=0.0
         )
-        question_match.extend(game_state_matches)
-        return question_match
+        question_match.intersection(set(game_state_matches))
+        return list(question_match)
 
     def __init__(self, memory: VectorStore, config: Configuration, game_state: str):
         structure = [
@@ -320,12 +325,12 @@ class QuestionLLM(LLM):
 # creates immersion by adding details to a story part
 class StoryLLM(LLM):
     def _retrieve_memory(self, user_input: str):
-        scene_match = self.memory.retrieve(
-            self.scene_description, n=1, min_similarity=0.25
-        )
-        story_matches = self.memory.retrieve(self.story_part, n=2, min_similarity=0.4)
-        scene_match.extend(story_matches)
-        return scene_match
+        scene_match = set(self.memory.retrieve(
+            self.scene_description, n=1, min_similarity=0.0
+        ))
+        story_matches = self.memory.retrieve(self.story_part, n=2, min_similarity=0.0)
+        scene_match.intersection(set(story_matches))
+        return list(scene_match)
 
     def __init__(
         self,
@@ -361,14 +366,14 @@ class StoryLLM(LLM):
 
 class DialogueLLM(LLM):
     def _retrieve_memory(self, user_input: str):
-        scene_match = self.memory.retrieve(
-            self.scene_description, n=1, min_similarity=0.25
+        scene_match = set(self.memory.retrieve(
+            self.scene_description, n=1, min_similarity=0.0
+        ))
+        character_matches = self.memory.retrieve(
+            self.character_description, n=2, min_similarity=0.0
         )
-        story_matches = self.memory.retrieve(
-            self.character_description, n=2, min_similarity=0.4
-        )
-        scene_match.extend(story_matches)
-        return scene_match
+        scene_match.intersection(set(character_matches))
+        return list(scene_match)
 
     def __init__(
         self,

@@ -3,6 +3,7 @@ from typing import Union
 
 from src.config import Configuration
 from src.llm import QuestionLLM, StoryLLM, DialogueLLM, ActionLLM
+from src.memory import VectorStore
 
 
 class Describer(ABC):
@@ -45,12 +46,12 @@ class ActionQuestion(Action):
         assert user_input
         return self.llm.query(user_input), None
 
-    def __init__(self, config: Configuration, scene_descr: str):
+    def __init__(self, memory: VectorStore, config: Configuration, scene_descr: str):
         name = "question"
         # TODO; formulate this better
         description = "The player asks serious questions to investigate his environment, to seek advice etc..."
         super().__init__(name, description)
-        self.llm = QuestionLLM(config, scene_descr)
+        self.llm = QuestionLLM(memory, config, scene_descr)
 
 
 class ActionTroll(Action):
@@ -60,7 +61,7 @@ class ActionTroll(Action):
         assert user_input
         return self.llm.query(user_input), None
 
-    def __init__(self, config: Configuration, scene_descr: str):
+    def __init__(self, memory: VectorStore, config: Configuration, scene_descr: str):
         name = "troll"
         description = "The player simply wants to troll the Game Master, break the 4th wall or mess around."
         llm_descr = (
@@ -69,7 +70,7 @@ class ActionTroll(Action):
         )
         llm_descr += f" To help you with that I provide you with a short description of the current scene: {scene_descr}"
         super().__init__(name, description)
-        self.llm = QuestionLLM(config, llm_descr)
+        self.llm = QuestionLLM(memory, config, llm_descr)
 
 
 class ActionFailure(Action):
@@ -93,6 +94,7 @@ class ActionStory(Action):
 
     def __init__(
         self,
+        memory: VectorStore,
         target_state: str,
         config: Configuration,
         name: str,
@@ -103,7 +105,7 @@ class ActionStory(Action):
         super().__init__(name, description)
         effect = f"This was the player's action: {effect}\n"
         effect += "Describe the action's effect"
-        self.llm = StoryLLM(config, scene_descr, effect)
+        self.llm = StoryLLM(memory, config, scene_descr, effect)
         self.target_state = target_state
 
 
@@ -128,11 +130,11 @@ class ActionSelf(Action):
         assert user_input
         return self.llm.query(user_input), None
 
-    def __init__(self, config: Configuration, self_descr: str):
+    def __init__(self, memory: VectorStore, config: Configuration, self_descr: str):
         name = "self"
         description = "The player wants to know some more about him-/herself."
         super().__init__(name, description)
-        self.llm = QuestionLLM(config, self_descr)
+        self.llm = QuestionLLM(memory, config, self_descr)
 
 
 class ActionTalk(Action):
@@ -144,6 +146,7 @@ class ActionTalk(Action):
 
     def __init__(
         self,
+        memory: VectorStore,
         config: Configuration,
         description: str,
         character_name: str,
@@ -152,7 +155,7 @@ class ActionTalk(Action):
     ):
         name = f"talk_{character_name}"
         super().__init__(name, description)
-        self.llm = DialogueLLM(config, scene_descr, character_descr)
+        self.llm = DialogueLLM(memory, config, scene_descr, character_descr)
 
 
 class Scene(Describer):
@@ -166,30 +169,31 @@ class Scene(Describer):
         return description
 
     def __init__(
-        self, config: Configuration, name: str, description: str, characters: dict
+        self, memory: VectorStore, config: Configuration, name: str, description: str, characters: dict
     ):
         super().__init__(description)
         self.name = name
         self.config = config
+        self.memory = memory
         self.characters = characters
         # Basic actions which are available in each scene
         self.actions: list = [
-            ActionQuestion(config, description),
-            ActionSelf(config, characters["self"].describe()),
-            ActionTroll(config, description),
+            ActionQuestion(memory, config, description),
+            ActionSelf(memory, config, characters["self"].describe()),
+            ActionTroll(memory, config, description),
             ActionFailure(),
         ]
-        self.llm = ActionLLM(self.config, description, self._describe_actions())
+        self.llm = ActionLLM(self.memory, self.config, description, self._describe_actions())
 
     def add_action_story(
         self, target_state: str, name: str, description: str, effect: str
     ):
         self.actions.append(
             ActionStory(
-                target_state, self.config, name, description, effect, self.describe()
+                self.memory, target_state, self.config, name, description, effect, self.describe()
             )
         )
-        self.llm = ActionLLM(self.config, description, self._describe_actions())
+        self.llm = ActionLLM(self.memory, self.config, description, self._describe_actions())
 
     def add_simple_action_story(
         self, target_state: str, target_descr: str, name: str, description: str
@@ -197,12 +201,13 @@ class Scene(Describer):
         self.actions.append(
             ActionSimpleStory(target_state, target_descr, name, description)
         )
-        self.llm = ActionLLM(self.config, description, self._describe_actions())
+        self.llm = ActionLLM(self.memory, self.config, description, self._describe_actions())
 
     def add_action_talk(self, character_name, character_descr: str):
         description = f"The player wants to talk to or approach {character_name}"
         self.actions.append(
             ActionTalk(
+                self.memory,
                 self.config,
                 description,
                 character_name,
@@ -210,7 +215,7 @@ class Scene(Describer):
                 self.describe(),
             )
         )
-        self.llm = ActionLLM(self.config, description, self._describe_actions())
+        self.llm = ActionLLM(self.memory, self.config, description, self._describe_actions())
 
     def get_action(self, name: str) -> Union[Action, None]:
         for a in self.actions:

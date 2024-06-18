@@ -32,7 +32,7 @@ class VectorStore:
             similarities.append(similarity)
 
         results = []
-        while len(results) < n:
+        while len(results) < n and len(similarities) > 0:
             most_similar_idx = np.argmax(similarities)
             value = similarities.pop(most_similar_idx)
             if value < 0 or (len(results) > 0 and value < min_similarity):

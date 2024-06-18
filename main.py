@@ -24,6 +24,7 @@ def print_text(s: str, color: str):
 
 
 def main():
+    print_text("loading...", "blue")
     game = Game()
     # run question-answer cycle:
     intro = "Welcome to TextAdventureGPT! Just write what you want to do, ask for information or troll."

@@ -2,6 +2,7 @@ import os
 import json
 
 from src.config import Configuration
+from src.memory import VectorStore
 from src.scene import Scene, Character
 
 
@@ -13,6 +14,7 @@ def debug_msg(s: str, config: Configuration):
 class Game:
     def __init__(self):
         self.config = Configuration()
+        self.memory = VectorStore()
         self.finished = False
         self.characters = {}
         self.scenes = {}
@@ -44,12 +46,13 @@ class Game:
             return "restart"
         action_name = self.current_scene.llm.query(user_input)
         action = self.current_scene.get_action(action_name)
-        data, scene = action.output(user_input)
+        llm_output, scene = action.output(user_input)
         if scene:
             if scene == "end":
                 self.finished = True
             self.current_scene = self.scenes[scene]
-        return data
+        self.memory.insert(user_input, llm_output)
+        return llm_output
 
     def parse_scene_json(self, path_to_scene_file: str):
         scene_data = Game.load_json(path_to_scene_file)
@@ -61,7 +64,7 @@ class Game:
             k: self.characters[k] for k in character_names if k in self.characters
         }
         characters["self"] = self.characters["self"]
-        scene = Scene(self.config, name, description, characters)
+        scene = Scene(self.memory, self.config, name, description, characters)
         jobs = []
         for key, value in action_data.items():
             if "target_scene" in value.keys():

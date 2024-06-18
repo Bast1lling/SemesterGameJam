@@ -18,8 +18,7 @@ class Configuration:
         os.path.dirname(os.path.abspath(__file__)), "stories", "detective"
     )
     # the following are debug parameters
-    mockup_openAI = False  # if true, drplanner will not use the openAI api
+    mockup_openAI = False
     debug = True
     save_traffic = True
     history = True
-    story = "detective"
