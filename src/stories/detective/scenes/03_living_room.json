@@ -1,25 +1,22 @@
 {
   "name": "living_room",
-  "description": "The living room exudes luxury and comfort. You are awed by its magnificence. Describe it's ",
+  "description": "The living room exudes luxury and comfort. You are awed by its magnificence <details>.",
+  "layout": "Behind the player is the door to the dining room. Directly to the left of the door are some sofas. In the back left corner of the room is a small coffee table next to an armchair.",
   "characters": [],
-  "actions": {
+  "objects": {
     "sofas": {
-      "description": "The player wants to search the sofas.",
-      "effect": "The sofas are incredible soft and cushy. The player eventually gets lost in their endless comfort. Describe his drift off to ecstasy!",
+      "description": "The sofas are incredible soft and cushy.",
+      "effect": "The player eventually gets lost in their endless comfort. Describe his drift off to ecstasy!",
       "target_scene": "end"
     },
     "table": {
-      "description": "The player investigates the coffee table.",
-      "effect": "The most interesting things there are the magazines (list some of the magazines there). Between them he finds a small, red book. On its cover there is black handprint.",
+      "description": "A bunch of magazines <details> are lying on top of the table. Next to them is a empty cup of coffee",
+      "effect": "Between the magazines the player finds a small, red book. On its cover there is black handprint.",
       "target_scene": "end"
     },
-    "book": {
-      "description": "Once the player discovered the book he can look inside.",
-      "effect": "But it's weird, all the pages are blank. He will need to take it to the lab!",
-      "prerequisites": ["table"]
-    },
-    "dining_room": {
-      "description": "If the player wants to, he can leave this room and enter the dining room",
+    "back_door": {
+      "description": "The door to the dining room is made out of wood and open. It seems very heavy.",
+      "effect": "The player boldly grabs the handle and opens the door. He finds himself back inside the dining room.",
       "target_scene": "dining_room"
     }
   }

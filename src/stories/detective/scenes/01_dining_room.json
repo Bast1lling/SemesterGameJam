@@ -1,27 +1,30 @@
 {
   "name": "dining_room",
-  "description": "You are in a large, sumptuous dining room. There is nothing but silver cutlery on the expansive table and a chandelier dangles from the ceiling. But actually, that's not the only thing dangling from the ceiling.",
+  "description": "The player is inside a large, sumptuous dining room <details>.",
+  "layout": "In front of him, in the center of the room is the table, hanging above it is the chandelier. Dangling on a rope from the chandelier is the dead body. Hidden in the body's jacket is a note. To the left is the door to the living room, to the right is the door to the kitchen.",
   "characters": [],
-  "actions": {
+  "objects": {
     "table": {
-      "description": "The player wants to search the table.",
-      "effect": "He will not find anything extraordinary. It seems like there was a large dinner party. Most of the food is left untouched (Describe the food)."
+      "description": "It seems like a large dinner party took place here not long ago. The table is loaded with delicious food <details> and luxurious silverware <details>.",
+      "effect": "He will not find anything extraordinary. He can eat the food if he wants. He can take the cutlery etc."
     },
     "body": {
-      "description": "The player wants to investigate the body.",
-      "effect": "The victim was dressed in a very fancy suit and you can immediately see that he was very rich (Explain why). But just when ver Bindung wants to give up his search, he finds something interesting: A small note inside one of the jacket's pocket."
+      "description": "The dead man is quite fat and almost without hair. On his pale, miserable face <details> sit a round pair of glasses. He is not dressed in ordinary clothes; on the contrary, his wealth is clearly visible <details> and he is dressed in a fancy suit <details>",
+      "effect": "The only thing he can take from the body is a note hidden inside the suit. He can close the dead man's eyes."
     },
     "note": {
-      "description": "The player wants to open/read the note.",
-      "effect": "The note is a ripped piece of paper. On it is written \"You disappointed it!\"",
+      "description": "The note is a ripped piece of paper. On it is written in black, scrawled letters \"You disappointed it!\"",
+      "effect": "Except for reading the note, the player can take it or throw it away.",
       "prerequisites": ["body"]
     },
-    "kitchen": {
-      "description": "If the player wants to, he can leave this room and enter the kitchen",
+    "right_door": {
+      "description": "The kitchen door is quite modern <details> and stands ajar. Behind it, one can make out a glistening light.",
+      "effect": "The player squeezes through the door and finds himself in the kitchen.",
       "target_scene": "kitchen"
     },
-    "living_room": {
-      "description": "If the player wants to, he can leave this room and enter the kitchen",
+    "left_door": {
+      "description": "The door to the living room is made out of wood and closed. It seems very heavy <details>.",
+      "effect": "The player boldly grabs the handle and opens the door. He finds himself inside what seems to be the living room.",
       "target_scene": "living_room"
     }
   }

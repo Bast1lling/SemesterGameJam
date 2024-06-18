@@ -24,6 +24,24 @@ class Character(Describer):
         return f"The character is called {self.name}. {self._description}"
 
 
+class Object(Describer):
+    def __init__(self, name: str, description: str):
+        super().__init__(description)
+        self.name = name
+
+    def describe(self) -> str:
+        return f"The {self.name} can be described like this: {self._description}"
+
+
+class Item(Describer):
+    def __init__(self, name: str, description: str):
+        super().__init__(description)
+        self.name = name
+
+    def describe(self) -> str:
+        return f"The Item \"{self.name}\" can be described like this: {self._description}"
+
+
 class Action(Describer, ABC):
     def describe(self):
         return f'"{self.name}": {self._description}'

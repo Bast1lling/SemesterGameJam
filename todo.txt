@@ -1,6 +1,11 @@
 TODO:
 1. add the concept of objects, items etc. which can be investigated, used etc.
 2. add the action talk which just means that the player wants to talk with the llm
-3. restructure action prompt completely
+3. restructure actions/action prompt completely
+    a) explore
+    b) describe <x>
+    c) interact <x>
+    d) talk <x>
+    e) think
 --- ideas ---
 1. turn action["effect"] into a list to encourage continuous questions about the same object

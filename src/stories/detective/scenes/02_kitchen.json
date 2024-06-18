@@ -1,16 +1,12 @@
 {
   "name": "kitchen",
-  "description": "The kitchen is very tidy. You can hardly find any dirt in here. There is a work space at the end of the room and on the left side are all work stations.",
+  "description": "The kitchen is very tidy. You can hardly find any dirt in here.",
+  "layout": "Left of the player, against the bare white wall is the counter top/ a work space. At the end of the room is the sink. Right of the player are the oven and the dishwasher. Behind him is the door to the dining room.",
   "characters": [],
-  "actions": {
+  "objects": {
     "counter_top": {
       "description": "The player wants to investigate the counter top.",
       "effect": "It smells very strange. But you can not see anything. If he asks a second time about it he will get this hint: The countertop smells not only like cleaning solution but also like alcohol."
-    },
-    "knifes": {
-      "description": "The player can go to the knifes and look at them.",
-      "effect": "Once the player approaches the knifes he suddenly slips and falls into the knifes. Describe his gruesome death.",
-      "target_scene": "end"
     },
     "dining_room": {
       "description": "If the player wants to, he can leave this room and enter the dining room",

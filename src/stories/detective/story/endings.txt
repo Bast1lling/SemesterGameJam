@@ -1,4 +1,0 @@
-kitchen,knifes
-Unfortunately the player slips on the freshly polished kitchen floor and stumbles into the knifes. He hurts himself lethally. Describe his painful death.
-living_room,sofas
-The sofas in the living room are so comfortable that player does not want to ever leave them. He will be sitting there for an eternity. Describe the pleasant thought he has.
