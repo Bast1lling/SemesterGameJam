@@ -21,7 +21,7 @@ class Game:
         path_to_characters = os.path.join(self.config.path_to_story, "characters")
         files = os.listdir(path_to_characters)
         for file in files:
-            if file.endswith('.json'):
+            if file.endswith(".json"):
                 self.parse_character_json(os.path.join(path_to_characters, file))
 
         # load scene files
@@ -30,7 +30,7 @@ class Game:
         files = sorted(files)
         jobs = []
         for file in files:
-            if file.endswith('.json'):
+            if file.endswith(".json"):
                 jobs.extend(self.parse_scene_json(os.path.join(path_to_scenes, file)))
         for scene, target_scene, name, descr in jobs:
             target_descr = self.scenes[target_scene].describe()
@@ -57,7 +57,9 @@ class Game:
         description = scene_data["description"]
         action_data: dict = scene_data["actions"]
         character_names: list = scene_data["characters"]
-        characters = {k: self.characters[k] for k in character_names if k in self.characters}
+        characters = {
+            k: self.characters[k] for k in character_names if k in self.characters
+        }
         characters["self"] = self.characters["self"]
         scene = Scene(self.config, name, description, characters)
         jobs = []
@@ -67,7 +69,9 @@ class Game:
             else:
                 target_state = None
             if "effect" in value.keys():
-                scene.add_action_story(target_state, key, value["description"], value["effect"])
+                scene.add_action_story(
+                    target_state, key, value["description"], value["effect"]
+                )
             else:
                 args = (scene, target_state, key, value["description"])
                 jobs.append(args)

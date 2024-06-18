@@ -3,7 +3,7 @@ from src.game import Game
 
 
 def print_text(s: str, color: str):
-    pattern = r'[.!?]'
+    pattern = r"[.!?]"
     colors = {
         "red": "\033[31m",
         "green": "\033[32m",
