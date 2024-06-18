@@ -10,7 +10,6 @@ import json
 
 from src.config import Configuration
 from src.prompter import Prompt, SystemPrompt
-from src.scene import Scene
 
 
 def check_openai_api_key(api_key, mockup=False):
@@ -47,9 +46,14 @@ def mockup_query(
 
 # An enum representing all possible methods of interacting with OpenAI api
 class LLMType(Enum):
-    SCENE = "scene"
+    # decides which action the player wants to take
+    ACTION = "action"
+    # adds immersive details to a story element
     STORY = "story"
+    # simulates a NPC conversation
     DIALOGUE = "dialogue"
+    # answers player questions
+    QUESTION = "question"
 
 
 # A class representing an OpenAI api function call
@@ -80,6 +84,11 @@ class LLMFunction:
             parameter_description
         )
 
+    def add_bool_parameter(self, parameter_name: str, parameter_description: str):
+        self.parameters["properties"][parameter_name] = LLMFunction._boolean_parameter(
+            parameter_description
+        )
+
     def add_code_parameter(self, parameter_name: str, parameter_description: str):
         self.parameters["properties"][parameter_name] = LLMFunction._code_parameter(
             parameter_description
@@ -93,6 +102,10 @@ class LLMFunction:
     @staticmethod
     def _number_parameter(description: str) -> dict:
         return {"type": "number", "description": description}
+
+    @staticmethod
+    def _boolean_parameter(description: str) -> dict:
+        return {"type": "boolean", "description": description}
 
     @staticmethod
     def _string_parameter(description: str) -> dict:
@@ -113,14 +126,15 @@ class LLMFunction:
 
 def get_function(llm_type: LLMType) -> Union[LLMFunction, None]:
     llm_function = LLMFunction()
-    if llm_type == LLMType.SCENE:
+    if llm_type == LLMType.ACTION:
         llm_function.add_string_parameter("action", "chosen action")
-        llm_function.add_string_parameter("response", "description of the action")
+    elif llm_type == LLMType.QUESTION:
+        return None
     elif llm_type == LLMType.STORY:
         return None
     elif llm_type == LLMType.DIALOGUE:
-        llm_function.add_string_parameter("state", "conversation state")
-        llm_function.add_string_parameter("response", "response to user")
+        llm_function.add_bool_parameter("continue", "should the conversation continue?")
+        llm_function.add_string_parameter("response", "dialogue response")
     else:
         raise ValueError("There exists no such LLMType")
     return llm_function
@@ -128,7 +142,7 @@ def get_function(llm_type: LLMType) -> Union[LLMFunction, None]:
 
 def get_system_prompt(llm_type: LLMType) -> SystemPrompt:
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(script_dir, f"prompts/{llm_type.name}_system.txt"), "r") as file:
+    with open(os.path.join(script_dir, f"prompts/{llm_type.name.lower()}_system.txt"), "r") as file:
         return SystemPrompt(file.read())
 
 
@@ -173,21 +187,20 @@ class LLM(ABC):
                 function_call={"name": functions[0]["name"]},
                 temperature=self.temperature,
             )
+            content = response.choices[0].message.function_call.arguments
+            content = json.loads(content)
         else:
             response = openai.chat.completions.create(
                 model=self.gpt_version,  # Use the appropriate model
                 messages=messages
             )
-            return response.choices[0].message.content
+            content = response.choices[0].message.content
 
-        # print("RESPONSE: " + str(response), Configuration().debug)
-        if self._save and response:
-            content = response.choices[0].message.function_call.arguments
-            content_json = json.loads(content)
+        if self._save:
 
-            self._save_iteration_as_json(messages, content_json)
-            self._save_iteration_as_txt(messages, content_json)
-            return content_json
+            self._save_iteration_as_json(messages, content)
+            self._save_iteration_as_txt(messages, content)
+            return content
         else:
             print(f"*\t <Prompt> failed, no response is generated")
             return None
@@ -201,13 +214,6 @@ class LLM(ABC):
 
         if not os.path.exists(txt_save_dir):
             os.makedirs(txt_save_dir, exist_ok=True)
-        with open(os.path.join(txt_save_dir, text_filename_result), "w") as txt_file:
-            for value in content_json.values():
-                if isinstance(value, str):
-                    txt_file.write(value + "\n")
-                elif isinstance(value, list):
-                    for item in value:
-                        txt_file.write(json.dumps(item) + "\n")
 
         with open(os.path.join(txt_save_dir, text_filename_prompt), "w") as txt_file:
             for d in messages:
@@ -217,6 +223,18 @@ class LLM(ABC):
                     elif type(value) is list:
                         for item in value:
                             txt_file.write(json.dumps(item))
+
+        if isinstance(content_json, str):
+            with open(os.path.join(txt_save_dir, text_filename_result), "w") as txt_file:
+                txt_file.write(content_json)
+        else:
+            with open(os.path.join(txt_save_dir, text_filename_result), "w") as txt_file:
+                for value in content_json.values():
+                    if isinstance(value, str):
+                        txt_file.write(value + "\n")
+                    elif isinstance(value, list):
+                        for item in value:
+                            txt_file.write(json.dumps(item) + "\n")
 
     # helper function to save both prompts and
     def _save_iteration_as_json(self, messages, content_json):
@@ -231,8 +249,30 @@ class LLM(ABC):
         with open(os.path.join(json_save_dir, json_filename_prompt), "w") as file:
             json.dump(messages, file)
         # save the result
+        if isinstance(content_json, str):
+            return
         with open(os.path.join(json_save_dir, json_filename_result), "w") as file:
             json.dump(content_json, file)
+
+
+class QuestionLLM(LLM):
+    def __init__(self, config: Configuration, game_state: str):
+        super().__init__(LLMType.QUESTION, config.gpt_version, config.openai_api_key, config.save_traffic)
+        # user prompt syntax
+        self.user_prompt_structure = [
+            "game_state",
+            "question",
+        ]
+        self.user_prompt = Prompt(self.user_prompt_structure)
+        # user prompt semantic
+        self.user_prompt.set("game_state", f"This is the current game state: {game_state}\n")
+
+    def _get_user_prompt(self) -> str:
+        return self.user_prompt.__str__()
+
+    def query(self, user_input: str):
+        self.user_prompt.set("question", f"This is the player's question: {user_input}\nWhat would you answer?")
+        return self._query()
 
 
 # creates immersion by adding details to a story part
@@ -245,22 +285,15 @@ class StoryLLM(LLM):
             "scene",
             "story",
         ]
-        if config.history:
-            self.user_prompt_structure.insert(0, "history")
         self.user_prompt = Prompt(self.user_prompt_structure)
         # user prompt semantic
-        history_content = "These were the previous player messages to you, consider them to add immersion:\n"
-        self.user_prompt.set("history", history_content)
         self.user_prompt.set("scene", f"This is the current setting: {scene_descr}")
         self.user_prompt.set("story", f"Now describe the following in more detail: {story_part}")
 
     def _get_user_prompt(self) -> str:
         return self.user_prompt.__str__()
 
-    def query(self, user_input):
-        history = self.user_prompt.get("history")
-        history += user_input + "\n"
-        self.user_prompt.set("history", history)
+    def query(self):
         return self._query()
 
 
@@ -271,9 +304,8 @@ class DialogueLLM(LLM):
         self.user_prompt_structure = [
             "scene",
             "character",
+            "history",
         ]
-        if config.history:
-            self.user_prompt_structure.append("history")
         self.user_prompt = Prompt(self.user_prompt_structure)
         # user prompt semantic
         self.user_prompt.set("scene", f"This is the current setting: {scene_descr}")
@@ -285,48 +317,42 @@ class DialogueLLM(LLM):
         return self.user_prompt.__str__()
 
     def query(self, user_input):
+        # append current player question
         history = self.user_prompt.get("history")
         history += f"Player: {user_input}\n"
         self.user_prompt.set("history", history)
         response = self._query()
         if "response" in response.keys():
+            # append model response
             history += f"Character: {response}\n"
             self.user_prompt.set("history", history)
         return response
 
 
-class SceneLLM(LLM):
+class ActionLLM(LLM):
     def __init__(
             self,
             config: Configuration,
-            scene: Scene,
+            scene_descr: str,
+            actions_descr: str,
     ):
-        super().__init__(LLMType.SCENE, config.gpt_version, config.openai_api_key, config.save_traffic)
+        super().__init__(LLMType.ACTION, config.gpt_version, config.openai_api_key, config.save_traffic)
         # user prompt syntax
         self.user_prompt_structure = [
             "scene",
             "actions",
             "user",
         ]
-        if config.history:
-            self.user_prompt_structure.insert(2, "history")
         self.user_prompt = Prompt(self.user_prompt_structure)
         # user prompt semantic
-        self.user_prompt.set("scene", f"This is where the player currently is: {scene.describe_to_llm()}")
-        actions_content = "The player can take the following actions:\n"
-        for action in scene.actions:
-            actions_content += action.describe_to_llm() + "\n"
+        self.user_prompt.set("scene", f"This is where the player currently is: {scene_descr}")
+        actions_content = f"The player can take the following actions:\n{actions_descr}"
         self.user_prompt.set("actions", actions_content)
-        self.user_prompt.set("history", "These were the previous messages from the player:\n")
 
     def _get_user_prompt(self) -> str:
         return self.user_prompt.__str__()
 
     def query(self, user_input: str):
         self.user_prompt.set("user", f"This was the input of the user: {user_input}")
-        result = self._query()
-        history = self.user_prompt.get("history")
-        if len(history) < 1000:
-            history += f"{user_input}\n"
-        self.user_prompt.set("history", history)
-        return result
+        result: dict = self._query()
+        return result["action"]

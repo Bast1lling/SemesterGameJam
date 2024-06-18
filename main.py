@@ -1,7 +1,5 @@
 import re
-
-from src.config import Configuration
-from src.game import Story
+from src.game import Game
 
 
 def print_text(s: str, color: str):
@@ -25,28 +23,16 @@ def print_text(s: str, color: str):
         print(colors[color] + sentence.strip() + delimiter + colors["end"])
 
 
-class Game:
-    def __init__(self):
-        self.config = Configuration()
-        self.story = Story(self.config)
-
-    def run(self):
-        # run question-answer cycle:
-        intro = "Welcome to TextAdventureGPT! Just write what you want to do, ask for information or just troll."
-        print_text(intro, "blue")
-        while True:
-            question = self.story.question()
-            print_text(question, "blue")
-            print("\n")
-            user_input = input()
-            answer = self.story.answer(user_input)
-            print_text(answer, "green")
-            print("\n")
-
-
 def main():
     game = Game()
-    game.run()
+    # run question-answer cycle:
+    intro = "Welcome to TextAdventureGPT! Just write what you want to do, ask for information or troll."
+    print_text(intro, "blue")
+    while True:
+        user_input = input()
+        answer = game.next(user_input)
+        print_text(answer, "green")
+        print("\n")
 
 
 if __name__ == "__main__":

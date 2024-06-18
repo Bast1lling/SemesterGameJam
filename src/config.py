@@ -14,6 +14,7 @@ class Configuration:
 
     token_limit = 6000  # token limits
     temperature = 0.8  # temperature for the LLM
+    path_to_story = os.path.dirname(os.path.abspath(__file__)) + "/stories/detective/"
     # the following are debug parameters
     mockup_openAI = False  # if true, drplanner will not use the openAI api
     debug = True

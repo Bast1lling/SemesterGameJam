@@ -1,65 +1,161 @@
-import os
 from abc import ABC, abstractmethod
+from typing import Union
 
 from src.config import Configuration
-from src.llm import LLM, LLMFunction
-from src.prompter import Prompt, SystemPrompt
+from src.llm import QuestionLLM, StoryLLM, DialogueLLM, ActionLLM
 
 
 class Describer(ABC):
-    def __init__(self, description: str, answer: str):
+    def __init__(self, description: str):
         self._description = description
-        self._answer = answer
 
     @abstractmethod
-    def describe_to_llm(self) -> str:
-        pass
-
-    @abstractmethod
-    def describe_to_player(self) -> str:
+    def describe(self) -> str:
         pass
 
 
-class Action(Describer):
-    def describe_to_llm(self):
-        return f"\"{self.name}\": {self._description}"
-
-    def describe_to_player(self):
-        return self._answer
-
-    def __init__(self, name: str, description: str, answer: str):
-        super().__init__(description, answer)
+class Character(Describer):
+    def __init__(self, name: str, description: str):
+        super().__init__(description)
         self.name = name
 
-    def set_answer(self, answer: str):
-        self._answer = answer
+    def describe(self) -> str:
+        return f"The character is called {self.name}. {self._description}"
 
-    def get_answer(self) -> str:
-        return self._answer
+
+class Action(Describer, ABC):
+    def describe(self):
+        return f"\"{self.name}\": {self._description}"
+
+    @abstractmethod
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        pass
+
+    def __init__(self, name: str, description: str):
+        super().__init__(description)
+        self.name = name
+
+
+class ActionQuestion(Action):
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        assert user_input
+        return self.llm.query(user_input), None
+
+    def __init__(self, config: Configuration, scene_descr: str):
+        name = "question"
+        # TODO; formulate this better
+        description = "The player asks serious questions to investigate his environment, to seek advice etc..."
+        super().__init__(name, description)
+        self.llm = QuestionLLM(config, scene_descr)
+
+
+class ActionTroll(Action):
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        assert user_input
+        return self.llm.query(user_input), None
+
+    def __init__(self, config: Configuration, scene_descr: str):
+        name = "troll"
+        description = "The player simply wants to troll the Game Master, break the 4th wall or mess around."
+        llm_descr = description + " Therefore, you should not answer seriously but rather give a witty response!"
+        llm_descr += f" To help you with that I provide you with a short description of the current scene: {scene_descr}"
+        super().__init__(name, description)
+        self.llm = QuestionLLM(config, llm_descr)
+
+
+class ActionFailure(Action):
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        response = "Sorry, I do not understand what you want from me..."
+        return response, None
+
+    def __init__(self):
+        name = "failure"
+        description = "The user input is not clear enough."
+        super().__init__(name, description)
+
+
+class ActionStory(Action):
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        return self.llm.query(), self.target_state
+
+    def __init__(self, target_state: str, config: Configuration, name: str, description: str, effect: str, scene_descr: str):
+        super().__init__(name, description)
+        effect = f"This was the player's action: {effect}\n"
+        effect += "Describe the action's effect"
+        self.llm = StoryLLM(config, scene_descr, effect)
+        self.target_state = target_state
+
+
+class ActionSimpleStory(Action):
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        return self.target_description, self.target_state
+
+    def __init__(self, target_state: str, target_descr: str, name: str, description: str):
+        super().__init__(name, description)
+        self.target_state = target_state
+        self.target_description = target_descr
+
+
+class ActionSelf(Action):
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        assert user_input
+        return self.llm.query(user_input), None
+
+    def __init__(self, config: Configuration, self_descr: str):
+        name = "self"
+        description = "The player wants to know some more about him-/herself."
+        super().__init__(name, description)
+        self.llm = QuestionLLM(config, self_descr)
+
+
+class ActionTalk(Action):
+    def output(self, user_input: Union[str, None]) -> (Union[str, dict], Union[str, None]):
+        assert user_input
+        return self.llm.query(user_input), None
+
+    def __init__(self, config: Configuration, description: str, character_name: str, character_descr: str, scene_descr: str):
+        name = f"talk_{character_name}"
+        super().__init__(name, description)
+        self.llm = DialogueLLM(config, scene_descr, character_descr)
 
 
 class Scene(Describer):
-    def describe_to_player(self) -> str:
-        return self._answer
-
-    def describe_to_llm(self) -> str:
+    def describe(self) -> str:
         return self._description
 
-    def __init__(self, name: str, description: str, answer: str, actions: list):
-        super().__init__(description, answer)
-        self.name = name
-        self.actions = actions
-        self.actions.append(Action("scene", "The player investigates his surroundings by asking questions about the "
-                                            "scene.", None))
-        self.actions.append(Action("troll", "The player wants to simply troll the Game Master, break the 4th wall or "
-                                            "mess around. Try to respond with the right amount of wit!", None))
-        self.actions.append(Action("advice", "The player seeks for advice. If you can not answer his questions, "
-                                             "tell him that you do not know everything and he should continue asking "
-                                             "questions.", None))
-        self.actions.append(Action("failure", "The user input is not clear enough.",
-                                   "What are you talking about...? You need to ask questions and stop trolling me :("))
+    def _describe_actions(self) -> str:
+        description = ""
+        for action in self.actions:
+            description += action.describe() + "\n"
+        return description
 
-    def get_action(self, name: str):
+    def __init__(self, config: Configuration, name: str, description: str, characters: dict):
+        super().__init__(description)
+        self.name = name
+        self.config = config
+        self.characters = characters
+        # Basic actions which are available in each scene
+        self.actions: list = [
+            ActionQuestion(config, description),
+            ActionSelf(config, characters["self"].describe()),
+            ActionTroll(config, description),
+            ActionFailure(),
+        ]
+        self.llm = ActionLLM(self.config, description, self._describe_actions())
+
+    def add_action_story(self, target_state: str, name: str, description: str, effect: Union[str, None]):
+        if effect:
+            self.actions.append(ActionStory(target_state, self.config, name, description, effect, self.describe()))
+        else:
+            self.actions.append(ActionSimpleStory(target_state, name, description))
+        self.llm = ActionLLM(self.config, description, self._describe_actions())
+
+    def add_action_talk(self, character_name, character_descr: str):
+        description = f"The player wants to talk to or approach {character_name}"
+        self.actions.append(ActionTalk(self.config, description, character_name, character_descr, self.describe()))
+        self.llm = ActionLLM(self.config, description, self._describe_actions())
+
+    def get_action(self, name: str) -> Union[Action, None]:
         for a in self.actions:
             if a.name == name:
                 return a

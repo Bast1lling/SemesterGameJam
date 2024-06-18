@@ -1,0 +1,28 @@
+{
+  "name": "dining_room",
+  "description": "You are in a large, sumptuous dining room. There is nothing but silver cutlery on the expansive table and a chandelier dangles from the ceiling. But actually, that's not the only thing dangling from the ceiling.",
+  "characters": [],
+  "actions": {
+    "table": {
+      "description": "The player wants to search the table.",
+      "effect": "He will not find anything extraordinary. It seems like there was a large dinner party. Most of the food is left untouched (Describe the food)."
+    },
+    "body": {
+      "description": "The player wants to investigate the body.",
+      "effect": "The victim was dressed in a very fancy suit and you can immediately see that he was very rich (Explain why). But just when ver Bindung wants to give up his search, he finds something interesting: A small note inside one of the jacket's pocket."
+    },
+    "note": {
+      "description": "The player wants to open/read the note.",
+      "effect": "The note is a ripped piece of paper. On it is written \"You disappointed it!\"",
+      "prerequisites": ["body"]
+    },
+    "kitchen": {
+      "description": "If the player wants to, he can leave this room and enter the kitchen",
+      "target_scene": "kitchen"
+    },
+    "living_room": {
+      "description": "If the player wants to, he can leave this room and enter the kitchen",
+      "target_scene": "living_room"
+    }
+  }
+}
