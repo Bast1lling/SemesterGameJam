@@ -265,17 +265,10 @@ class LLM(ABC):
 
 class DescriberLLM(LLM):
     def _retrieve_memory(self, user_input: str):
-        question_match = set(self.memory.retrieve(user_input, n=1, min_similarity=0.0))
-        object_matches = self.memory.retrieve(
-            self.object_description, n=2, min_similarity=0.0
-        )
-        question_match.intersection(set(object_matches))
-        return list(question_match)
+        return []
 
     def __init__(self, memory: VectorStore, config: Configuration):
-        self.object_description = None
         structure = [
-            "scene",
             "object",
             "memory",
             "user",
@@ -289,12 +282,15 @@ class DescriberLLM(LLM):
             config.save_traffic,
             config.temperature,
         )
-        self.llm_function = None
+        self.llm_function.add_string_parameter(
+            "description", "updated object description"
+        )
+        self.llm_function.add_string_array_parameter(
+            "children", "children-objects explored by player"
+        )
 
-    def set_prompt(self, scene_description: str, object_description: str):
-        self.object_description = object_description
-        self.user_prompt.set("scene", f"This is the current scene: {scene_description}")
-        self.user_prompt.set("object", f"And this is the object: {object_description}")
+    def set_prompt(self, object_prompt: str):
+        self.user_prompt.set("object", object_prompt)
 
     def query(self, user_input: str):
         self.user_prompt.set(
@@ -304,20 +300,22 @@ class DescriberLLM(LLM):
         return self._query(user_input=user_input)
 
 
-# creates immersion by adding details to a story part
-class ExplorerLLM(LLM):
+class InteracterLLM(LLM):
     def _retrieve_memory(self, user_input: str):
         return []
 
-    def __init__(self, memory: VectorStore, config: Configuration):
+    def __init__(
+        self,
+        memory: VectorStore,
+        config: Configuration,
+    ):
         structure = [
-            "scene",
-            "objects",
+            "object",
             "memory",
             "user",
         ]
         super().__init__(
-            "explorer",
+            "interacter",
             memory,
             structure,
             config.gpt_version,
@@ -326,24 +324,18 @@ class ExplorerLLM(LLM):
             config.temperature,
         )
         self.llm_function.add_string_parameter(
-            "description", "describe what the player sees"
+            "action", "description of the player's action"
         )
-        self.llm_function.add_string_array_parameter(
-            "objects", "objects seen by the player"
+        self.llm_function.add_string_parameter(
+            "description", "updated object description"
         )
 
-    def set_prompt(self, scene_descr: str, scene_layout: str, object_names: list[str]):
-        scene_content = f"The scene is characterized by this: {scene_descr}\n"
-        scene_content += f"From the player's perspective, the objects are positioned like this: {scene_layout}"
-        names = " ".join(object_names)
-        object_content = f"You can choose from the following set of objects. Please use exactly these names: ({names})"
-        self.user_prompt.set("scene", scene_content)
-        self.user_prompt.set("objects", object_content)
+    def set_prompt(self, object_prompt: str):
+        self.user_prompt.set("object", object_prompt)
 
-    def query(self, user_input: str):
+    def query(self, user_input):
         self.user_prompt.set(
-            "user",
-            f"This is the player's input: {user_input}",
+            "user", f"This is what the player wants to do: {user_input}"
         )
         return self._query(user_input=user_input)
 
@@ -357,10 +349,7 @@ class TalkerLLM(LLM):
         memory: VectorStore,
         config: Configuration,
     ):
-        self.character_description = None
-        self.scene_description = None
         structure = [
-            "scene",
             "character",
             "memory",
             "history",
@@ -379,14 +368,10 @@ class TalkerLLM(LLM):
         )
         self.llm_function.add_string_parameter("response", "dialogue response")
 
-    def set_prompt(self, scene_descr: str, character_descr: str):
-        self.scene_description = scene_descr
-        self.character_description = character_descr
-        # user prompt semantic
-        self.user_prompt.set("scene", f"This is the current setting: {scene_descr}")
+    def set_prompt(self, character_prompt: str):
         self.user_prompt.set(
             "character",
-            f"This is the character(s) you simulate: {character_descr}",
+            character_prompt,
         )
         history_content = "This is the conversation so far, continue it:\n"
         self.user_prompt.set("history", history_content)
@@ -404,49 +389,7 @@ class TalkerLLM(LLM):
         return response
 
 
-class InteracterLLM(LLM):
-    def _retrieve_memory(self, user_input: str):
-        return []
-
-    def __init__(
-        self,
-        memory: VectorStore,
-        config: Configuration,
-    ):
-        structure = [
-            "object",
-            "effect",
-            "memory",
-            "user",
-        ]
-        super().__init__(
-            "interacter",
-            memory,
-            structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
-        )
-        self.llm_function = None
-
-    def set_prompt(self, object_descr: str, effect_descr: str):
-        self.user_prompt.set(
-            "object", f"This is object the user wants to interact with: {object_descr}"
-        )
-        self.user_prompt.set(
-            "effect",
-            f"The effects which an interaction could have are described here: {effect_descr}",
-        )
-
-    def query(self, user_input):
-        self.user_prompt.set(
-            "user", f"This is what the player wants to do: {user_input}"
-        )
-        return self._query(user_input=user_input)
-
-
-class ThinkerLLM(LLM):
+class QuestionLLM(LLM):
     def _retrieve_memory(self, user_input: str):
         return self.memory.retrieve(user_input, n=3, min_similarity=0.0)
 
@@ -454,15 +397,15 @@ class ThinkerLLM(LLM):
         self,
         memory: VectorStore,
         config: Configuration,
+        llm_type: str
     ):
         structure = [
-            "scene",
-            "self",
+            "data",
             "memory",
             "user",
         ]
         super().__init__(
-            "thinker",
+            llm_type,
             memory,
             structure,
             config.gpt_version,
@@ -472,14 +415,8 @@ class ThinkerLLM(LLM):
         )
         self.llm_function = None
 
-    def set_prompt(self, scene_descr: str, scene_layout: str, self_descr: str):
-        self.user_prompt.set(
-            "scene", f"This is the current scene: {scene_descr} {scene_layout}"
-        )
-        self.user_prompt.set(
-            "self",
-            f"Here is some information about the player's character: {self_descr}",
-        )
+    def set_prompt(self, data: str):
+        self.user_prompt.set("data", data)
 
     def query(self, user_input):
         self.user_prompt.set(
@@ -491,11 +428,10 @@ class ThinkerLLM(LLM):
 
 class ActorLLM(LLM):
     def _retrieve_memory(self, user_input: str):
-        history = set(self.memory.retrieve_last(n=5))
-        other = set(self.memory.retrieve(user_input, n=3, min_similarity=0.3))
-        history.update(other)
-        result = list(history)
-        map(lambda x: x[0], result)
+        history = set(self.memory.retrieve_last(n=3))
+        other = set(self.memory.retrieve(user_input, n=2, min_similarity=0.3))
+        history = history.union(other)
+        result = [a for a, b in list(history)]
         return result
 
     def __init__(
@@ -520,28 +456,23 @@ class ActorLLM(LLM):
         )
         self.llm_function.add_string_parameter("action", "chosen action")
 
-    def set_prompt(self, scene_descr: str, thing_names: list[str]):
-        scene_content = f"This is the current scene: {scene_descr}"
-        scene_content += (
-            f"These are the names of all objects/characters inside the scene:\n"
-        )
-        scene_content += " ".join(thing_names)
-        self.user_prompt.set("scene", scene_content)
+    def set_prompt(self, scene_descr: str):
+        self.user_prompt.set("scene", scene_descr)
 
         action_content = (
             "What follows now is a list of actions which the player can take:\n"
         )
         action_content += (
-            "When the player wants to find out more about his surroundings, you respond with"
-            '"explore"\n'
-        )
-        action_content += (
-            "When the player wants to know more about a specific object/character called <name>, "
+            "When the player wants to know more about a specific game-object called <name>, "
             'you respond with "describe_<name>"\n'
         )
         action_content += (
-            "When the player wants to talk to some character or interact with something in the scene, you respond with "
+            "When the player wants to talk to someone or interact with something/someone, you respond with "
             '"interact_<name>"\n'
+        )
+        action_content += (
+            "When the player has a more general, game-related question you respond with "
+            '"question"\n'
         )
         action_content += (
             "If the player's input is in some other way game-related, or he just wants to think out load or troll the "

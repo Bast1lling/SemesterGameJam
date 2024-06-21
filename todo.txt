@@ -9,3 +9,6 @@ TODO:
     e) think
 --- ideas ---
 1. turn action["effect"] into a list to encourage continuous questions about the same object
+2. normalize the cosine similarity over all elements in memory and multiply it with its array position
+-> recent additions should be valued higher
+3. add CreatorLLM which creates a new game object through json definition

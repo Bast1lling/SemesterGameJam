@@ -21,8 +21,8 @@ class VectorStore:
 
     def retrieve_last(self, n=1):
         results = []
-        last_index = len(self.memory) - 1
-        for i in range(last_index, last_index - n, -1):
+        last_index = max(len(self.memory) - 1, 0)
+        for i in range(last_index, max(last_index - n, 0), -1):
             result = self.memory[i]
             results.append((result["question"], result["answer"]))
         return results
