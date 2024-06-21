@@ -19,6 +19,14 @@ class VectorStore:
         }
         self.memory.append(container)
 
+    def retrieve_last(self, n=1):
+        results = []
+        last_index = len(self.memory) - 1
+        for i in range(last_index, last_index - n, -1):
+            result = self.memory[i]
+            results.append((result["question"], result["answer"]))
+        return results
+
     def retrieve(
         self, compare_to: str, n=3, min_similarity=0.3
     ) -> list[Tuple[str, str]]:

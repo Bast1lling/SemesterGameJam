@@ -9,7 +9,8 @@
       "effect": "It smells very strange. But you can not see anything. If he asks a second time about it he will get this hint: The countertop smells not only like cleaning solution but also like alcohol."
     },
     "dining_room": {
-      "description": "If the player wants to, he can leave this room and enter the dining room",
+      "description": "The kitchen door is quite modern <details> and stands wide open.",
+      "effect": "If the player wants to, he can leave this room and enter the dining room",
       "target_scene": "dining_room"
     }
   }
