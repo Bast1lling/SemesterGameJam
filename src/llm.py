@@ -232,6 +232,9 @@ class LLM(ABC):
         ) as txt_file:
             if content:
                 txt_file.write(content)
+
+            if not content_data:
+                return
             for value in content_data.values():
                 if isinstance(value, str):
                     txt_file.write(value + "\n")
@@ -254,6 +257,8 @@ class LLM(ABC):
         with open(os.path.join(json_save_dir, json_filename_result), "w") as file:
             if content:
                 file.write(content)
+            if not content_data:
+                return
             json.dump(content_data, file)
 
 
@@ -463,10 +468,6 @@ class ActorLLM(LLM):
         action_content += (
             "When the player wants to know more about or interact with the scene, "
             'you respond with "describe_scene" or "interact_scene"\n'
-        )
-        action_content += (
-            "When the player has a more general, game-related question you respond with "
-            '"question"\n'
         )
         action_content += (
             "If the player's input is in some other way game-related, or he just wants to think out load or troll the "

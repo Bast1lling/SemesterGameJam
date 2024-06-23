@@ -34,6 +34,7 @@ class Scene(Object):
         self.all.update(self.characters)
         self.all["scene"] = self
         self.explored: set[str] = set()
+        self.explored.add("player")
 
         # action independent llm
         self.other_llm = QuestionLLM(self.memory, self.config, "other")
