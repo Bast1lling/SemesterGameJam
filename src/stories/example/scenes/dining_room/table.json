@@ -1,0 +1,47 @@
+{
+  "name": "table",
+  "summary": "The dinner table.",
+  "description": "This is a dinner table in the center of the dining room.",
+  "facts": [
+    {
+      "description": "There is a lot of food on the table. List some examples."
+    },
+    {
+      "description": "On the table are silver cutlery and expansive plates. Describe them in detail."
+    },
+    {
+      "description": "It seems like a large dinner party took place here not long ago. But they did not finish eating."
+    },
+    {
+      "description": "The food smells very tasty."
+    },
+    {
+      "description": "The table is handmade designer furniture from Italy. Describe its looks and feels."
+    },
+    {
+      "description": "There are other objects which you typically find on a dinner table. List them."
+    }
+  ],
+  "interactions": [
+    {
+      "description": "The player eats some of the food.",
+      "effect": "It is cold but it still tastes good. Describe the taste."
+    },
+    {
+      "description": "He takes some of the plates or cutlery.",
+      "effect": "He puts them in his brief case for later examination."
+    },
+    {
+      "description": "He takes some of the food.",
+      "effect": "He wraps it in tinfoil and puts it into his brief case."
+    },
+    {
+      "description": "He destroys some of the objects on the table.",
+      "effect": "If it is something sharp or heavy, he hurts himself slightly. Otherwise everything is okay."
+    },
+    {
+      "description": "He tries to turn over or destroy the table.",
+      "effect": "He fails, it is too heavy and robust."
+    }
+  ]
+}

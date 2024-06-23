@@ -1,0 +1,23 @@
+{
+  "name": "example",
+  "summary": "A short description given to the LLM to uniquely identify the object",
+  "description": "A description given to the player containing all information he is allowed to know from the start",
+  "facts": [
+    "A list of possible information about the object",
+    "It can be hard coded text",
+    "Or open questions for the LLM"
+  ],
+  "interactions": [
+    {
+      "summary": "A short description of the interaction",
+      "effect": "The consequence of the action",
+      "target": "Optional: the resulting scene"
+    }
+  ],
+  "children": [
+    "This list contains all children objects of an object",
+    "It can be the name of another object defined somewhere as JSON",
+    "Or a nested object definition"
+  ],
+  "scene": true
+}
