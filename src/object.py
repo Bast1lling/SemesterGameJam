@@ -1,3 +1,6 @@
+from typing import Union
+
+
 class Fact:
     def __init__(self, fact_text: str, reveals=None):
         self.description = fact_text
@@ -37,17 +40,17 @@ class Object:
         self.revealed = False
 
     def describer_prompt(self) -> str:
-        result = f"The description of {self.name} which is currently displayed to the player is: {self.description}\n"
+        result = f"Description of {self.name} for player: {self.description}\n"
 
-        result += f"These are unknown facts about {self.name} which the player can learn about:\n"
+        result += f"Discoverable facts:\n"
         for i, fact in enumerate(self.facts):
             result += f"Fact {i}: {fact}\n"
         return result[:-1]
 
     def interacter_prompt(self) -> str:
-        result = f"The description of {self.name} which is currently displayed to the player is: {self.description}\n"
+        result = f"Description of {self.name} for player: {self.description}\n"
 
-        result += f"These are all possible interaction with {self.name}:\n"
+        result += f"Possible interactions:\n"
         for i, interaction in enumerate(self.interactions):
             result += f"Interaction {i}: {interaction}\n"
         return result[:-1]
@@ -65,9 +68,10 @@ class Object:
         return revealed_objects
 
     def trigger_interaction(
-        self, updated_description: str, interaction_indices: list[int]
+        self, updated_description: Union[str, None], interaction_indices: list[int]
     ) -> list[str]:
-        self.description = updated_description
+        if updated_description:
+            self.description = updated_description
         revealed_objects = []
         for i in interaction_indices:
             interaction = self.interactions.pop(i)
@@ -95,9 +99,9 @@ class Character(Object):
         self.personality = personality
 
     def talker_prompt(self) -> str:
-        result = f"The description of {self.name} which is currently displayed to the player is: {self.description}\n"
+        result = f"Description of {self.name} for player: {self.description}\n"
 
-        result += f"And this is {self.name}'s personality: {self.personality}"
+        result += f"{self.name}'s personality: {self.personality}"
         return result
 
 

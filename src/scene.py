@@ -134,14 +134,15 @@ class Scene(Object):
                     return description, None
                 elif "interact" in command_name:
                     self.interacter_llm.set_prompt(obj.interacter_prompt())
-                    response = self.interacter_llm.query(user_input, explanation)
+                    response: dict = self.interacter_llm.query(user_input, explanation)
 
                     indices = response["indices"]
                     if isinstance(indices, list):
                         for i, x in enumerate(indices):
                             indices[i] = int(x)
-
-                    description = response["description"]
+                    description = None
+                    if "description" in response.keys():
+                        description = response["description"]
                     explored = obj.trigger_interaction(description, indices)
                     self.explore(explored)
                     effect = response["effect"]

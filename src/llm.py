@@ -268,6 +268,7 @@ class DescriberLLM(LLM):
 
     def __init__(self, memory: VectorStore, config: Configuration):
         structure = [
+            "few-shots",
             "object",
             "memory",
             "user",
@@ -287,6 +288,11 @@ class DescriberLLM(LLM):
         self.llm_function.add_string_parameter(
             "description", "updated game-object description"
         )
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(
+                os.path.join(script_dir, "few-shots", "describer.txt"), "r"
+        ) as file:
+            self.user_prompt.set("few-shots", file.read())
 
     def set_prompt(self, object_prompt: str):
         self.user_prompt.set("object", object_prompt)
@@ -309,6 +315,7 @@ class InteracterLLM(LLM):
             config: Configuration,
     ):
         structure = [
+            "few-shots",
             "object",
             "memory",
             "user",
@@ -331,6 +338,11 @@ class InteracterLLM(LLM):
         self.llm_function.add_string_parameter(
             "description", "updated game-object description"
         )
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(
+                os.path.join(script_dir, "few-shots", "interacter.txt"), "r"
+        ) as file:
+            self.user_prompt.set("few-shots", file.read())
 
     def set_prompt(self, object_prompt: str):
         self.user_prompt.set("object", object_prompt)
@@ -340,7 +352,7 @@ class InteracterLLM(LLM):
             "user",
             f"This was the players input: {user_input} and here is some possible further explanation: {explanation}",
         )
-        return self._query(user_input=user_input)[1]
+        return self._query(user_input=user_input, not_required=["description"])[1]
 
 
 class TalkerLLM(LLM):
@@ -438,6 +450,7 @@ class ActorLLM(LLM):
             config: Configuration,
     ):
         structure = [
+            "few-shots",
             "memory",
             "scene",
             "actions",
@@ -454,6 +467,11 @@ class ActorLLM(LLM):
         )
         self.llm_function.add_string_parameter("explanation", "explain the action")
         self.llm_function.add_string_parameter("action", "chosen action")
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(
+                os.path.join(script_dir, "few-shots", "actor.txt"), "r"
+        ) as file:
+            self.user_prompt.set("few-shots", file.read())
 
     def set_prompt(self, scene_descr: str):
         self.user_prompt.set("scene", scene_descr)
