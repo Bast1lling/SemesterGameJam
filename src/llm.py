@@ -9,6 +9,7 @@ import json
 from src.config import Configuration
 from src.memory import VectorStore
 from src.prompter import Prompt, SystemPrompt
+from src.util import load_json
 
 
 def check_openai_api_key(api_key, mockup=False):
@@ -127,11 +128,8 @@ class LLM(ABC):
             self,
             llm_type: str,
             vector_store: VectorStore,
+            config: Configuration,
             prompt_structure: list,
-            gpt_version,
-            api_key,
-            save: bool,
-            temperature,
     ) -> None:
         assert "memory" in prompt_structure
         self.memory = vector_store
@@ -141,11 +139,12 @@ class LLM(ABC):
         ) as file:
             self.system_prompt = SystemPrompt(file.read())
         self.user_prompt = Prompt(prompt_structure)
+        self.config = config
         self.llm_function = LLMFunction()
-        self.gpt_version = gpt_version
-        openai.api_key = api_key
-        self.temperature = temperature
-        self._save = save
+        self.gpt_version = config.gpt_version
+        openai.api_key = config.openai_api_key
+        self.temperature = config.temperature
+        self._save = config.save_traffic
         self._counter = 0
         # TODO configure this path if you want to save the prompts
         self._save_dir = os.path.join(
@@ -160,6 +159,12 @@ class LLM(ABC):
 
     # send <messages> to the OpenAI api
     def _query(self, user_input="", not_required: Union[list, None] = None):
+        if self.config.mockup_path:
+            identifier = self.__class__.__name__
+            response_file = f"result_{identifier}_{self._counter}.json"
+            self._counter += 1
+            return "", load_json(os.path.join(self.config.mockup_path, response_file))
+
         matches = self._retrieve_memory(user_input)
         print(f"matches: {len(matches)}")
         if len(matches) > 0:
@@ -276,14 +281,14 @@ class DescriberLLM(LLM):
         super().__init__(
             "describer",
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
         self.llm_function.add_array_parameter(
             "indices", "index/indices of the revealed fact", array_type="number"
+        )
+        self.llm_function.add_string_parameter(
+            "answer", "answer to the player input"
         )
         self.llm_function.add_string_parameter(
             "description", "updated game-object description"
@@ -302,7 +307,7 @@ class DescriberLLM(LLM):
             "user",
             f"This was the players input: {user_input} and here is some possible further explanation: {explanation}",
         )
-        return self._query(user_input=user_input)[1]
+        return self._query(user_input=user_input, not_required=["description"])[1]
 
 
 class InteracterLLM(LLM):
@@ -323,11 +328,8 @@ class InteracterLLM(LLM):
         super().__init__(
             "interacter",
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
         self.llm_function.add_array_parameter(
             "indices", "index/indices of the triggered interaction", array_type="number"
@@ -372,11 +374,8 @@ class TalkerLLM(LLM):
         super().__init__(
             "talker",
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
         self.llm_function.add_bool_parameter(
             "continue", "should the conversation continue?"
@@ -417,11 +416,8 @@ class QuestionLLM(LLM):
         super().__init__(
             llm_type,
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
         self.llm_function = None
 
@@ -459,11 +455,8 @@ class ActorLLM(LLM):
         super().__init__(
             "actor",
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
         self.llm_function.add_string_parameter("explanation", "explain the action")
         self.llm_function.add_string_parameter("action", "chosen action")

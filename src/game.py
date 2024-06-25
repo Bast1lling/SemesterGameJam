@@ -1,5 +1,4 @@
 import os
-import json
 from typing import Tuple
 
 from src.config import Configuration
@@ -7,6 +6,7 @@ from src.llm import ActorLLM
 from src.memory import VectorStore
 from src.object import parse_object, Object, Fact, Interaction
 from src.scene import Scene
+from src.util import load_json
 
 
 def debug_msg(s: str, config: Configuration):
@@ -98,14 +98,9 @@ class Game:
         )
 
     def parse_character_json(self, path_to_character_file: str):
-        character_data = Game.load_json(path_to_character_file)
+        character_data = load_json(path_to_character_file)
         name = character_data["name"]
         self.characters[name] = parse_object(character_data)
-
-    @staticmethod
-    def load_json(path: str):
-        with open(path, "r") as file:
-            return json.load(file)
 
     @staticmethod
     def parse_folder(path_to_dir: str) -> Tuple[dict, dict[str, Object]]:
@@ -115,9 +110,9 @@ class Game:
         for entry in os.scandir(path_to_dir):
             if entry.is_file():
                 if parent_name in str(entry):
-                    parent_data = Game.load_json(os.path.join(path_to_dir, entry))
+                    parent_data = load_json(os.path.join(path_to_dir, entry))
                 else:
-                    data = Game.load_json(os.path.join(path_to_dir, entry))
+                    data = load_json(os.path.join(path_to_dir, entry))
                     child = parse_object(data)
                     children[child.name] = child
             elif entry.is_dir():

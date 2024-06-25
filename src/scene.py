@@ -34,6 +34,7 @@ class Scene(Object):
         self.all.update(self.characters)
         self.all["scene"] = self
         self.explored: set[str] = set()
+        self.explored.add("scene")
         self.explored.add("player")
 
         # action independent llm
@@ -94,7 +95,10 @@ class Scene(Object):
             self.question_llm.set_prompt(self.question_prompt())
             return self.question_llm.query(user_input, explanation), None
         elif "failure" in action:
-            return f"Sorry, I did not understand you due to {debug_msg}...", None
+            if len(debug_msg) > 0:
+                return f"Sorry, I did not understand you due to {debug_msg}...", None
+            else:
+                return "Sorry, I did not understand you", None
         else:
             command = action.split("_")
             if len(command) < 2:
@@ -117,6 +121,12 @@ class Scene(Object):
                         explanation,
                         user_input,
                     )
+                elif obj_name not in self.explored:
+                    return self.evaluate(
+                        "failure",
+                        explanation,
+                        user_input,
+                    )
 
                 obj = self.all[obj_name]
                 if "describe" in command_name:
@@ -127,11 +137,15 @@ class Scene(Object):
                     if isinstance(indices, list):
                         for i, x in enumerate(indices):
                             indices[i] = int(x)
-
-                    description = response["description"]
-                    explored = obj.reveal_fact(description, indices)
-                    self.explore(explored)
-                    return description, None
+                    answer = response["answer"]
+                    if "description" in response.keys():
+                        description = response["description"]
+                        answer += f"\n{description}"
+                        explored = obj.reveal_fact(description, indices)
+                        self.explore(explored)
+                    elif len(indices) > 0:
+                        print("Description has not been updated, but facts have???")
+                    return answer, None
                 elif "interact" in command_name:
                     self.interacter_llm.set_prompt(obj.interacter_prompt())
                     response: dict = self.interacter_llm.query(user_input, explanation)

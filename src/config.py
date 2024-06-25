@@ -18,7 +18,9 @@ class Configuration:
         os.path.dirname(os.path.abspath(__file__)), "stories", "example"
     )
     # the following are debug parameters
-    mockup_openAI = False
+    mockup_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mockups", "describer_example", "json"
+    )
     debug = True
     save_traffic = True
     history = True
