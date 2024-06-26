@@ -1,0 +1,35 @@
+{
+  "name": "body",
+  "summary": "A corpse hanging from the chandelier",
+  "description": "The corpse of an older man.",
+  "facts": [
+    {
+      "description": "The man is dressed in fancy clothes. Describe them"
+    },
+    {
+      "description": "He wears an elegant black suit."
+    },
+    {
+      "description": "Inside his trouser pockets is a purse"
+    },
+    {
+      "description": "Somehow this person seems familiar."
+    },
+    {
+      "description": "The dead man looks old, around 60. Describe what makes him appear old."
+    },
+    {
+      "description": "On his pale, miserable face sit a round pair of glasses. Describe his face in detail."
+    },
+    {
+      "description": "The suit has a suit pocket with a red handkerchief inside it."
+    }
+  ],
+  "interactions": [
+    {
+      "description": "The player searches the bodies clothes",
+      "effect": "He finds a note"
+    }
+  ],
+  "children": ["note"]
+}

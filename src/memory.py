@@ -21,8 +21,8 @@ class VectorStore:
 
     def retrieve_last(self, n=1):
         results = []
-        last_index = len(self.memory) - 1
-        for i in range(last_index, last_index - n, -1):
+        last_index = max(len(self.memory) - 1, 0)
+        for i in range(last_index, max(last_index - n, 0), -1):
             result = self.memory[i]
             results.append((result["question"], result["answer"]))
         return results
@@ -50,3 +50,8 @@ class VectorStore:
             results.append((result["question"], result["answer"]))
         # Find the most similar pair
         return results
+
+    def compare(self, a: str, b: str) -> float:
+        e1 = self.model.encode(a)
+        e2 = self.model.encode(b)
+        return cosine_similarity([e1], [e2])[0][0]

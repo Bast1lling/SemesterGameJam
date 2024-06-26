@@ -1,0 +1,12 @@
+{
+  "name": "player",
+  "summary": "The player himself.",
+  "description": "You are Jan ver Bindung, a famous detective.",
+  "personality": "He is very stubborn",
+  "facts": [
+    {
+      "description": "He has bad breath."
+    }
+  ],
+  "interactions": []
+}

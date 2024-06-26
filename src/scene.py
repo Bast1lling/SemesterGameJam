@@ -1,96 +1,163 @@
 from typing import Union, Tuple
 
 from src.config import Configuration
-from src.content import Character, Object
+from src.object import Character, Object, Fact, Interaction
 from src.llm import (
     DescriberLLM,
-    ExplorerLLM,
     InteracterLLM,
     TalkerLLM,
-    ThinkerLLM,
+    QuestionLLM,
 )
 from src.memory import VectorStore
 
 
-class Scene:
+class Scene(Object):
     def __init__(
         self,
         memory: VectorStore,
         config: Configuration,
         name: str,
+        summary: str,
         description: str,
-        layout: str,
-        characters: dict[str, Character],
+        facts: list[Fact],
+        interactions: list[Interaction],
         objects: dict[str, Object],
+        characters: dict[str, Character],
     ):
-        self.description = description
-        self.layout = layout
-        self.name = name
+        super().__init__(name, summary, description, facts, interactions, parent=None)
         self.config = config
         self.memory = memory
-        self.characters = characters
         self.objects = objects
-        self.things = {}
-        for name, obj in self.objects.items():
-            self.things[name] = obj.describe()
-        for name, character in self.characters.items():
-            self.things[name] = character.describe()
-
-        # things which existence is known to player:
-        self.explored = set()
-        # things which have already been described to the player:
-        self.described = set()
-        # objects the player already interacted with:
-        self.interacted = set()
-        # character the player already talked to:
-        self.talked = set()
+        self.characters = characters
+        self.all: dict[str, Object] = {}
+        self.all.update(self.objects)
+        self.all.update(self.characters)
+        self.all["scene"] = self
+        self.explored: set[str] = set()
+        self.explored.add("scene")
+        self.explored.add("player")
 
         # action independent llm
-        self.thinker_llm = ThinkerLLM(self.memory, self.config)
-        self.thinker_llm.set_prompt(
-            self.description, self.layout, self.characters["player"].describe()
-        )
-        self.explorer_llm = ExplorerLLM(self.memory, self.config)
-        self.explorer_llm.set_prompt(
-            self.description, self.layout, list(self.things.keys())
-        )
+        self.other_llm = QuestionLLM(self.memory, self.config, "other")
+        self.other_llm.set_prompt(self.summary_prompt())
+
+        self.question_llm = QuestionLLM(self.memory, self.config, "question")
+        self.question_llm.set_prompt(self.summary_prompt())
 
         # action dependant llm
         self.describer_llm = DescriberLLM(self.memory, self.config)
         self.interacter_llm = InteracterLLM(self.memory, self.config)
         self.talker_llm = TalkerLLM(self.memory, self.config)
 
-    def evaluate(self, action: str, user_input: str) -> Tuple[str, Union[str, None]]:
-        if "explore" in action:
-            response = self.explorer_llm.query(user_input)
-            self.explored.update(set(response["objects"]))
-            return response["description"], None
-        elif "other" in action:
-            return self.thinker_llm.query(user_input), None
+    def explore(self, revealed_objects: list[str]):
+        self.explored.update(revealed_objects)
+
+    def other_prompt(self) -> str:
+        player = self.characters["player"]
+        result = (
+            "The game is made of multiple scenes which contain objects and character which the player can look "
+            "at or interact with\n"
+        )
+        result += (
+            "The player should move around in the scenes and explore everything. Occasionally, he can also pick "
+            "up items.\n"
+        )
+        result += f"The player is {player.description}\n"
+        result += f"The current scene is {self.summary_prompt()}"
+        return result
+
+    def question_prompt(self) -> str:
+        player = self.characters["player"]
+        result = "This is a in-depth description of the current scene:\n"
+        result += f"{self.describer_prompt()}\n"
+        result += "Here is an in-depth description of the player:\n"
+        result += f"{player.describer_prompt()}\n"
+        result += (
+            "This is a lot of information most of might not even be known to the player, so be careful with "
+            "what you say. In some cases it might be best to remain as vague as possible.\n"
+        )
+        return result
+
+    def actor_prompt(self):
+        result = "This is a list of all game-objects which are inside the scene:\n"
+        for obj_name in self.explored:
+            obj = self.all[obj_name]
+            result += f"{obj.summary_prompt()}\n"
+        return result[:-1]
+
+    def evaluate(
+        self, action: str, explanation: str, user_input: str, debug_msg=""
+    ) -> Tuple[list[str], Union[str, None]]:
+        if "other" in action:
+            self.other_llm.set_prompt(self.other_prompt())
+            return self.other_llm.query(user_input, explanation), None
+        elif "question" in action:
+            self.question_llm.set_prompt(self.question_prompt())
+            return self.question_llm.query(user_input, explanation), None
         elif "failure" in action:
-            return "Sorry, I did not understand you...", None
-        elif "describe" in action:
-            thing = action.split("_")[1]
-            self.describer_llm.set_prompt(self.description, self.things[thing])
-            return self.describer_llm.query(user_input), None
-        elif "interact" in action:
-            name = action.split("_")[1]
-            if name in self.objects.keys():
-                obj = self.objects[name]
-                self.interacter_llm.set_prompt(obj.describe(), obj.effect)
-                return self.interacter_llm.query(user_input), obj.target_scene
-            elif name in self.characters.keys():
-                self.talker_llm.set_prompt(
-                    self.description, self.characters[name].describe()
-                )
-                response = self.talker_llm.query(user_input)
-                # todo move this out of the scene?
-                while response["continue"]:
-                    print(response["response"])
-                    user_input = input()
-                    response = self.talker_llm.query(user_input)
-                return response["response"], None
+            if len(debug_msg) > 0:
+                return [f"Sorry, I did not understand you due to {debug_msg}..."], None
             else:
-                return f"You can not interact with {name}!", None
+                return ["Sorry, I did not understand you"], None
         else:
-            return f"Unknown action: {action}", None
+            command = action.split("_")
+            if len(command) < 2:
+                return self.evaluate(
+                    "failure",
+                    explanation,
+                    user_input,
+                    debug_msg='command did not contain "_"',
+                )
+            else:
+                command_name = command.pop(0)
+                obj_name = "_".join(command)
+                if obj_name not in self.all.keys():
+                    # todo debug msg
+                    print(
+                        f"{obj_name} can not be {command_name} since it does not exist."
+                    )
+                    return self.evaluate(
+                        f"{command_name}_scene",
+                        explanation,
+                        user_input,
+                    )
+                elif obj_name not in self.explored:
+                    return self.evaluate(
+                        "failure",
+                        explanation,
+                        user_input,
+                    )
+
+                obj = self.all[obj_name]
+                if "describe" in command_name:
+                    self.describer_llm.set_prompt(obj.describer_prompt())
+                    response = self.describer_llm.query(user_input, explanation)
+
+                    indices = response["indices"]
+                    if isinstance(indices, list):
+                        for i, x in enumerate(indices):
+                            indices[i] = int(x)
+                    answer = [response["answer"]]
+                    if "description" in response.keys():
+                        description = response["description"]
+                        answer.append(description)
+                        explored = obj.reveal_fact(description, indices)
+                        self.explore(explored)
+                    elif len(indices) > 0:
+                        print("Description has not been updated, but facts have???")
+                    return answer, None
+                elif "interact" in command_name:
+                    self.interacter_llm.set_prompt(obj.interacter_prompt())
+                    response: dict = self.interacter_llm.query(user_input, explanation)
+
+                    indices = response["indices"]
+                    if isinstance(indices, list):
+                        for i, x in enumerate(indices):
+                            indices[i] = int(x)
+                    answer = response["effect"]
+                    if "description" in response.keys():
+                        description = response["description"]
+                        explored = obj.trigger_interaction(description, indices)
+                        self.explore(explored)
+                        answer.append(description)
+                    return answer, None

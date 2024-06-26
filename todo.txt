@@ -1,11 +1,8 @@
 TODO:
-1. add the concept of objects, items etc. which can be investigated, used etc.
-2. add the action talk which just means that the player wants to talk with the llm
-3. restructure actions/action prompt completely
-    a) explore
-    b) describe <x>
-    c) interact <x>
-    d) talk <x>
-    e) think
+1. Add all remaining object jsons
+4. let actions also return a short descr of the action
 --- ideas ---
 1. turn action["effect"] into a list to encourage continuous questions about the same object
+2. normalize the cosine similarity over all elements in memory and multiply it with its array position
+-> recent additions should be valued higher
+3. add CreatorLLM which creates a new game object through json definition

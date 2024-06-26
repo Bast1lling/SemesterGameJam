@@ -1,0 +1,25 @@
+{
+  "name": "note",
+  "summary": "A hidden note.",
+  "facts": [
+    {
+      "description": "The note reads \"You disappointed me\""
+    },
+    {
+      "description": "The note is a ripped piece of paper."
+    },
+    {
+      "description": "The letters are black and scrawled."
+    }
+  ],
+  "interactions": [
+    {
+      "description": "The player takes the note.",
+      "effect": "It belongs now to his inventory."
+    },
+    {
+      "description": "He tries to destroy it in some way.",
+      "effect": "Describe the destruction."
+    }
+  ]
+}

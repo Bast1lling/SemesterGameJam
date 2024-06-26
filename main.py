@@ -23,18 +23,10 @@ def print_text(s: str, color: str):
         print(colors[color] + sentence.strip() + delimiter + colors["end"])
 
 
-def main():
+if __name__ == "__main__":
     print_text("loading...", "blue")
     game = Game()
     # run question-answer cycle:
     intro = "Welcome to TextAdventureGPT! Just write what you want to do, ask for information or troll."
     print_text(intro, "blue")
-    while True:
-        user_input = input()
-        answer = game.next(user_input)
-        print_text(answer, "green")
-        print("\n")
-
-
-if __name__ == "__main__":
-    main()
+    game.run()

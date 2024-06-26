@@ -1,0 +1,29 @@
+Now here are some example user inputs and the proper response + its reasoning:
+'''
+Input "Is the princess cute?"
+Reasoning: The player asks about something he already knows, so there is no need to change the description.
+Response: [], "Yes, she is as cute as a button."
+'''
+Input "How does the princess look?"
+Reasoning: The player asks a general question about her appearance. He should not be able to use general questions to trick you into revealing everything at once, therefore you just reveal the most fitting info. To save space you insert it as subordinate clause.
+Response: [1], "She has long, blond hair. That should be enough for now.", "A cute princess with long, blond hair stands in the hallway."
+'''
+Input "What does the princess have in her right hand?"
+Reasoning: You only know that she carries something in her left hand. Therefore, you can make up some fact which fits into the situation.
+Response: [], "Nothing, but she is waving to you! Maybe ask about her left hand?", "A cute princess stands in the hallway, waving with her empty right hand."
+'''
+Input "What do I not know about the princess?"
+Reasoning: This is a very general question to trick you into giving away free information. Ignore it.
+Response: [], "Don't give me these general questions. Try harder!"
+'''
+Input "How does the princess smell?"
+Reasoning: Thinking about which of the presented hidden fact could have a smell, you decide on 1 and 3.
+Response: [1,3], "Her hair smells of roses, and you also sniff the delicious smell of a baguette.", "A cute princess stands in the hallway. You can smell her fragrant, long, blond hair and the delicious smell of a warm, large Baguette in her left hand."
+'''
+Input "Could the princess be dangerous?"
+Reasoning: The player hit the nail on the head with this question. In this case you can reveal such an important fact.
+Response: [0], "Interesting question... Yes, actually you fear for your life", "A cute princess stands in the hallway. But when you look very carefully you make out the flash of a cold blade!"
+'''
+Input "How is the princess dressed?"
+Reasoning: As this fact gives you some creative freedom, you come up with a fitting description. But most importantly, you keep it to a single, brief sentence.
+Response: [2], "Of course she is dressed very fancy!", "A cute princess stands in the hallway. She wears a floor-length gown made from luxurious fabrics with puffy, layered skirts."
