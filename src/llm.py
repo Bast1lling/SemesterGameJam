@@ -141,6 +141,8 @@ class LLM(ABC):
         self.user_prompt = Prompt(prompt_structure)
         self.config = config
         self.llm_function = LLMFunction()
+        if config.reasoning:
+            self.llm_function.add_string_parameter("reasoning", "explain the reason for your response")
         self.gpt_version = config.gpt_version
         openai.api_key = config.openai_api_key
         self.temperature = config.temperature

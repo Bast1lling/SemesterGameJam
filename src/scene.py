@@ -87,7 +87,7 @@ class Scene(Object):
 
     def evaluate(
         self, action: str, explanation: str, user_input: str, debug_msg=""
-    ) -> Tuple[str, Union[str, None]]:
+    ) -> Tuple[list[str], Union[str, None]]:
         if "other" in action:
             self.other_llm.set_prompt(self.other_prompt())
             return self.other_llm.query(user_input, explanation), None
@@ -96,9 +96,9 @@ class Scene(Object):
             return self.question_llm.query(user_input, explanation), None
         elif "failure" in action:
             if len(debug_msg) > 0:
-                return f"Sorry, I did not understand you due to {debug_msg}...", None
+                return [f"Sorry, I did not understand you due to {debug_msg}..."], None
             else:
-                return "Sorry, I did not understand you", None
+                return ["Sorry, I did not understand you"], None
         else:
             command = action.split("_")
             if len(command) < 2:
@@ -137,10 +137,10 @@ class Scene(Object):
                     if isinstance(indices, list):
                         for i, x in enumerate(indices):
                             indices[i] = int(x)
-                    answer = response["answer"]
+                    answer = [response["answer"]]
                     if "description" in response.keys():
                         description = response["description"]
-                        answer += f"\n{description}"
+                        answer.append(description)
                         explored = obj.reveal_fact(description, indices)
                         self.explore(explored)
                     elif len(indices) > 0:
@@ -154,10 +154,10 @@ class Scene(Object):
                     if isinstance(indices, list):
                         for i, x in enumerate(indices):
                             indices[i] = int(x)
-                    description = None
+                    answer = response["effect"]
                     if "description" in response.keys():
                         description = response["description"]
-                    explored = obj.trigger_interaction(description, indices)
-                    self.explore(explored)
-                    effect = response["effect"]
-                    return effect, None
+                        explored = obj.trigger_interaction(description, indices)
+                        self.explore(explored)
+                        answer.append(description)
+                    return answer, None

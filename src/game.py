@@ -8,10 +8,21 @@ from src.object import parse_object, Object, Fact, Interaction
 from src.scene import Scene
 from src.util import load_json
 
+colors = {
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "blue": "\033[34m",
+}
 
-def debug_msg(s: str, config: Configuration):
-    if config.debug:
-        print(s)
+
+def log(messages: list[str]):
+    end_symbol = "\033[0m"
+    color_queue = list(colors.keys())
+    for msg in messages:
+        color = color_queue.pop(0)
+        color_queue.append(color)
+        content = colors[color] + msg + end_symbol
+        print(content)
 
 
 class Game:
@@ -41,9 +52,15 @@ class Game:
         # init llm determining the current action
         self.llm = ActorLLM(self.memory, self.config)
 
-    def next(self, user_input: str):
+    def run(self):
+        while True:
+            user_input = input()
+            answer = self.next(user_input)
+            log(answer)
+
+    def next(self, user_input: str) -> list[str]:
         if self.finished:
-            return "restart"
+            return ["restart"]
         self.llm.set_prompt(self.current_scene.actor_prompt())
         action_name, action_explanation = self.llm.query(user_input)
         llm_output, scene = self.current_scene.evaluate(
@@ -53,8 +70,25 @@ class Game:
             if scene == "end":
                 self.finished = True
             self.current_scene = self.scenes[scene]
-        self.memory.insert(user_input, llm_output)
-        return llm_output
+
+        unique_llm_output: set[str] = set()
+        threshold = 0.7
+        while len(llm_output) > 0:
+            # determine bs
+            a = llm_output.pop(0)
+            bs: list[str] = [a]
+            for b in llm_output:
+                similarity = self.memory.compare(a, b)
+                print(f"similarity score: {similarity} a: {a} b: {b}")
+                if similarity > threshold:
+                    bs.append(b)
+            bs = list(sorted(bs, key=lambda x: len(x)))
+            unique_llm_output.add(bs.pop())
+            llm_output = [x for x in llm_output if x not in bs]
+
+        for x in unique_llm_output:
+            self.memory.insert(user_input, x)
+        return list(unique_llm_output)
 
     def parse_scene_folder(self, path_to_dir: str):
         scene_data, children = Game.parse_folder(path_to_dir)

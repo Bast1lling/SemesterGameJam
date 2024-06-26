@@ -50,3 +50,8 @@ class VectorStore:
             results.append((result["question"], result["answer"]))
         # Find the most similar pair
         return results
+
+    def compare(self, a: str, b: str) -> float:
+        e1 = self.model.encode(a)
+        e2 = self.model.encode(b)
+        return cosine_similarity([e1], [e2])[0][0]

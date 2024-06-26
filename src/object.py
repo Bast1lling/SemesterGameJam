@@ -68,10 +68,9 @@ class Object:
         return revealed_objects
 
     def trigger_interaction(
-        self, updated_description: Union[str, None], interaction_indices: list[int]
+        self, updated_description: str, interaction_indices: list[int]
     ) -> list[str]:
-        if updated_description:
-            self.description = updated_description
+        self.description = updated_description
         revealed_objects = []
         for i in interaction_indices:
             interaction = self.interactions.pop(i)

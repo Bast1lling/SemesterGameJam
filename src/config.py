@@ -23,4 +23,4 @@ class Configuration:
     )
     debug = True
     save_traffic = True
-    history = True
+    reasoning = True
