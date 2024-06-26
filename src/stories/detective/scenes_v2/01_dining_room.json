@@ -1,0 +1,78 @@
+{
+  "name": "dining_room",
+  "summary": "A large, sumptuous dining room.",
+  "description": "In the center of the room is a table, the player stands in front of it. Hanging above the table is a chandelier from where a dead body is dangling on a rope. To the left of the table is a door to the living room, to the right is a door to the kitchen. At the back of the table is a large window.",
+  "characters": [],
+  "explored": ["table", "right_door", "left_door"],
+  "children": {
+    "table": {
+      "summary": "The dinner table.",
+      "description": "It seems like a large dinner party took place here not long ago. The table is loaded with delicious food and luxurious silverware.",
+      "description_rules": [
+        "You can describe the food in more detail.",
+        "You can invent other, small objects which typically are on top of a table.",
+        "You can describe the table's material."
+      ],
+      "interaction_rules": [
+        "The player will not find anything extraordinary.",
+        "He can eat the food if he wants.",
+        "He can take the cutlery, plates etc.",
+        "He can break the plates.",
+        "He can not destroy anything else."
+      ]
+    },
+    "body": {
+      "summary": "A hanged corpse",
+      "description": "The dead man is quite fat and almost without hair. On his pale, miserable face sit a round pair of glasses. He is not dressed in ordinary clothes but rather fancy. He wears a black suit.",
+      "description_rules": [
+        "You can describe the face in more detail.",
+        "You can describe the clothes in more detail.",
+        "The dead man should not have any more possessions than already mentioned",
+        "His age is around 60"
+      ],
+      "interaction_rules": [
+        "If the player searches the suit, he finds a note.",
+        "He can close the body's eyes.",
+        "He can not take anything or do anything to the body since this would be immoral. Reprimand him if he tries that."
+      ],
+      "children": {
+        "note": {
+          "summary": "A piece of paper.",
+          "description": "The note is a ripped piece of paper. On it is written in black, scrawled letters \"You disappointed it!\"",
+          "interaction_rules": [
+            "The player can read the note",
+            "He can take it",
+            "He can destroy it"
+          ],
+          "prerequisites": ["body"]
+        }
+      }
+    },
+    "right_door": {
+      "summary": "A door to the kitchen",
+      "description": "The kitchen door is quite modern and stands ajar. Behind it, one can make out a glistening light.",
+      "description_rules": [
+        "You can describe the material of the door"
+      ],
+      "interaction_rules": [
+            "The player can go to the kitchen only if the door is open",
+            "He can close the door",
+            "He can open it if it is closed"
+          ],
+      "target_scene": "kitchen"
+    },
+    "left_door": {
+      "summary": "A door to the living room",
+      "description": "The door to the living room is made out of wood and closed. It seems very heavy.",
+      "description_rules": [
+        "You the feeling of touching the wood"
+      ],
+      "interaction_rules": [
+            "The player can enter the living room only if the door is open",
+            "He can open it",
+            "He can close it again"
+      ],
+      "target_scene": "living_room"
+    }
+  }
+}

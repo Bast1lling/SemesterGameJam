@@ -1,0 +1,39 @@
+{
+  "name": "dining_room",
+  "summary": "A large, sumptuous dining room.",
+  "description": "You entered a large, sumptuous dining room.",
+  "facts": [
+    {
+      "description": "In the center of the room is a dinner table.",
+      "reveals": ["table"]
+    },
+    {
+      "description": "Hanging above the table is a chandelier.",
+      "reveals": ["chandelier"]
+    },
+    {
+      "description": "A dead body is dangling on a rope from the chandelier.",
+      "reveals": ["body"]
+    },
+    {
+      "description": "To the left of the table is a door to the living room.",
+      "reveals": ["left_door"]
+    },
+    {
+      "description": "To the right of the table is a door to the kitchen.",
+      "reveals": ["right_door"]
+    },
+    {
+      "description": "At the back of the table is a large window."
+    }
+  ],
+  "interactions": [
+    {
+      "description": "The player moves around in the room.",
+      "effect": "Update his position in the description."
+    }
+  ],
+  "characters": [
+
+  ]
+}

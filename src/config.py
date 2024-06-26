@@ -13,12 +13,14 @@ class Configuration:
     gpt_version = "gpt-3.5-turbo"  # "gpt-4o" # "gpt-3.5-turbo-0125"  # "gpt-4-turbo-preview"  # "gpt-4-1106-preview"
 
     token_limit = 6000  # token limits
-    temperature = 0.8  # temperature for the LLM
+    temperature = 0.6  # temperature for the LLM
     path_to_story = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "stories", "detective"
+        os.path.dirname(os.path.abspath(__file__)), "stories", "example"
     )
     # the following are debug parameters
-    mockup_openAI = False
+    mockup_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "mockups", "describer_example", "json"
+    )
     debug = True
     save_traffic = True
-    history = True
+    reasoning = True

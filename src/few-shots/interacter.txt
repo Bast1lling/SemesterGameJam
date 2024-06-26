@@ -1,0 +1,26 @@
+Now here are some example user inputs and the proper response (+ reasoning) demonstrated using an example game object:
+'''
+Game-Object
+Description of shotgun for player: A heavy, old shotgun in your right hand.
+Possible interactions:
+0. Fire the shotgun
+1. Reload it.
+2. Drop it on the ground.
+3. Throw it somewhere.
+'''
+Input "I shoot at the bad guy"
+Reasoning: The player obviously wants to fire the gun, but you can decide whether he hits his target or not. Since this does not majorly affect the weapon, there is no need for updating the description.
+Response: [0], "With a loud burst you fire a bullet. But you are too nervous and miss the target by a hair."
+'''
+Input "I lean my gun against the wall"
+Reasoning: Even though he does not exactly drop it, he wants to do something similar. In this case you also need to update the description since the gun is no longer in the player's hand.
+Response: [2], "It rests gently against the wall.", "A heavy, old shotgun leaning against the wall."
+'''
+Input "While shooting, I make a 360, run on the wall and hit the bad guy with my shotgun on the head"
+Reasoning: This is not very realistic. Do not allow the player to do such things.
+Response: [], "You wish you could do that, but you are not superman!"
+'''
+Input "I fire a shot and immediately reach for the ammunition"
+Reasoning: Even if the player does only hint at it, he wants to do two actions in sequence. Again, there is no need for updating the description.
+Response: [0, 1], "You fire a shot at the bad guy and hit him in the upper leg. He screams in pain. Then you reload your weapon."
+'''

@@ -9,6 +9,7 @@ import json
 from src.config import Configuration
 from src.memory import VectorStore
 from src.prompter import Prompt, SystemPrompt
+from src.util import load_json
 
 
 def check_openai_api_key(api_key, mockup=False):
@@ -24,8 +25,8 @@ def check_openai_api_key(api_key, mockup=False):
 
 
 def mockup_query(
-    iteration,
-    directory="/home/sebastian/Documents/Uni/Bachelorarbeit/DrPlanner_Data/mockup/debug",
+        iteration,
+        directory="/home/sebastian/Documents/Uni/Bachelorarbeit/DrPlanner_Data/mockup/debug",
 ):
     filenames = []
     # finds all .jsons in the directory and assumes them to be mockup responses
@@ -88,10 +89,10 @@ class LLMFunction:
             parameter_description
         )
 
-    def add_string_array_parameter(
-        self, parameter_name: str, parameter_description: str
+    def add_array_parameter(
+            self, parameter_name: str, parameter_description: str, array_type="string"
     ):
-        items = {"type": "string"}
+        items = {"type": array_type}
         self.parameters["properties"][parameter_name] = LLMFunction._array_parameter(
             items, parameter_description
         )
@@ -124,28 +125,28 @@ class LLMFunction:
 # interface class managing communication with OpenAI api through query method
 class LLM(ABC):
     def __init__(
-        self,
-        llm_type: str,
-        vector_store: VectorStore,
-        prompt_structure: list,
-        gpt_version,
-        api_key,
-        save: bool,
-        temperature,
+            self,
+            llm_type: str,
+            vector_store: VectorStore,
+            config: Configuration,
+            prompt_structure: list,
     ) -> None:
         assert "memory" in prompt_structure
         self.memory = vector_store
         script_dir = os.path.dirname(os.path.abspath(__file__))
         with open(
-            os.path.join(script_dir, "prompts", f"{llm_type}_system.txt"), "r"
+                os.path.join(script_dir, "prompts", f"{llm_type}_system.txt"), "r"
         ) as file:
             self.system_prompt = SystemPrompt(file.read())
         self.user_prompt = Prompt(prompt_structure)
+        self.config = config
         self.llm_function = LLMFunction()
-        self.gpt_version = gpt_version
-        openai.api_key = api_key
-        self.temperature = temperature
-        self._save = save
+        if config.reasoning:
+            self.llm_function.add_string_parameter("reasoning", "explain the reason for your response")
+        self.gpt_version = config.gpt_version
+        openai.api_key = config.openai_api_key
+        self.temperature = config.temperature
+        self._save = config.save_traffic
         self._counter = 0
         # TODO configure this path if you want to save the prompts
         self._save_dir = os.path.join(
@@ -160,6 +161,12 @@ class LLM(ABC):
 
     # send <messages> to the OpenAI api
     def _query(self, user_input="", not_required: Union[list, None] = None):
+        if self.config.mockup_path:
+            identifier = self.__class__.__name__
+            response_file = f"result_{identifier}_{self._counter}.json"
+            self._counter += 1
+            return "", load_json(os.path.join(self.config.mockup_path, response_file))
+
         matches = self._retrieve_memory(user_input)
         print(f"matches: {len(matches)}")
         if len(matches) > 0:
@@ -192,25 +199,23 @@ class LLM(ABC):
                 function_call={"name": functions[0]["name"]},
                 temperature=self.temperature,
             )
-            content = response.choices[0].message.function_call.arguments
-            content = json.loads(content)
+            content = response.choices[0].message.content
+            content_json = response.choices[0].message.function_call.arguments
+            content_data = json.loads(content_json)
         else:
             response = openai.chat.completions.create(
                 model=self.gpt_version, messages=messages  # Use the appropriate model
             )
             content = response.choices[0].message.content
+            content_data = None
 
         if self._save:
-
-            self._save_iteration_as_json(messages, content)
-            self._save_iteration_as_txt(messages, content)
-            return content
-        else:
-            print(f"*\t <Prompt> failed, no response is generated")
-            return None
+            self._save_iteration_as_json(messages, content, content_data)
+            self._save_iteration_as_txt(messages, content, content_data)
+        return content, content_data
 
     # helper function to save both prompts and responses in a human-readable form
-    def _save_iteration_as_txt(self, messages, content_json):
+    def _save_iteration_as_txt(self, messages, content, content_data):
         identifier = self.__class__.__name__
         text_filename_result = f"result_{identifier}_{self._counter}.txt"
         text_filename_prompt = f"prompt_{identifier}_{self._counter}.txt"
@@ -229,24 +234,23 @@ class LLM(ABC):
                         for item in value:
                             txt_file.write(json.dumps(item))
 
-        if isinstance(content_json, str):
-            with open(
+        with open(
                 os.path.join(txt_save_dir, text_filename_result), "w"
-            ) as txt_file:
-                txt_file.write(content_json)
-        else:
-            with open(
-                os.path.join(txt_save_dir, text_filename_result), "w"
-            ) as txt_file:
-                for value in content_json.values():
-                    if isinstance(value, str):
-                        txt_file.write(value + "\n")
-                    elif isinstance(value, list):
-                        for item in value:
-                            txt_file.write(json.dumps(item) + "\n")
+        ) as txt_file:
+            if content:
+                txt_file.write(content)
+
+            if not content_data:
+                return
+            for value in content_data.values():
+                if isinstance(value, str):
+                    txt_file.write(value + "\n")
+                elif isinstance(value, list):
+                    for item in value:
+                        txt_file.write(json.dumps(item) + "\n")
 
     # helper function to save both prompts and
-    def _save_iteration_as_json(self, messages, content_json):
+    def _save_iteration_as_json(self, messages, content, content_data):
         identifier = self.__class__.__name__
         json_filename_result = f"result_{identifier}_{self._counter}.json"
         json_filename_prompt = f"prompt_{identifier}_{self._counter}.json"
@@ -257,25 +261,21 @@ class LLM(ABC):
         with open(os.path.join(json_save_dir, json_filename_prompt), "w") as file:
             json.dump(messages, file)
         # save the result
-        if isinstance(content_json, str):
-            return
         with open(os.path.join(json_save_dir, json_filename_result), "w") as file:
-            json.dump(content_json, file)
+            if content:
+                file.write(content)
+            if not content_data:
+                return
+            json.dump(content_data, file)
 
 
 class DescriberLLM(LLM):
     def _retrieve_memory(self, user_input: str):
-        question_match = set(self.memory.retrieve(user_input, n=1, min_similarity=0.0))
-        object_matches = self.memory.retrieve(
-            self.object_description, n=2, min_similarity=0.0
-        )
-        question_match.intersection(set(object_matches))
-        return list(question_match)
+        return []
 
     def __init__(self, memory: VectorStore, config: Configuration):
-        self.object_description = None
         structure = [
-            "scene",
+            "few-shots",
             "object",
             "memory",
             "user",
@@ -283,125 +283,33 @@ class DescriberLLM(LLM):
         super().__init__(
             "describer",
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
-        self.llm_function = None
-
-    def set_prompt(self, scene_description: str, object_description: str):
-        self.object_description = object_description
-        self.user_prompt.set("scene", f"This is the current scene: {scene_description}")
-        self.user_prompt.set("object", f"And this is the object: {object_description}")
-
-    def query(self, user_input: str):
-        self.user_prompt.set(
-            "user",
-            f"This is the player's input: {user_input}",
-        )
-        return self._query(user_input=user_input)
-
-
-# creates immersion by adding details to a story part
-class ExplorerLLM(LLM):
-    def _retrieve_memory(self, user_input: str):
-        return []
-
-    def __init__(self, memory: VectorStore, config: Configuration):
-        structure = [
-            "scene",
-            "objects",
-            "memory",
-            "user",
-        ]
-        super().__init__(
-            "explorer",
-            memory,
-            structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
+        self.llm_function.add_array_parameter(
+            "indices", "index/indices of the revealed fact", array_type="number"
         )
         self.llm_function.add_string_parameter(
-            "description", "describe what the player sees"
+            "answer", "answer to the player input"
         )
-        self.llm_function.add_string_array_parameter(
-            "objects", "objects seen by the player"
+        self.llm_function.add_string_parameter(
+            "description", "updated game-object description"
         )
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(
+                os.path.join(script_dir, "few-shots", "describer.txt"), "r"
+        ) as file:
+            self.user_prompt.set("few-shots", file.read())
 
-    def set_prompt(self, scene_descr: str, scene_layout: str, object_names: list[str]):
-        scene_content = f"The scene is characterized by this: {scene_descr}\n"
-        scene_content += f"From the player's perspective, the objects are positioned like this: {scene_layout}"
-        names = " ".join(object_names)
-        object_content = f"You can choose from the following set of objects. Please use exactly these names: ({names})"
-        self.user_prompt.set("scene", scene_content)
-        self.user_prompt.set("objects", object_content)
+    def set_prompt(self, object_prompt: str):
+        self.user_prompt.set("object", object_prompt)
 
-    def query(self, user_input: str):
+    def query(self, user_input: str, explanation: str):
         self.user_prompt.set(
             "user",
-            f"This is the player's input: {user_input}",
+            f"This was the players input: {user_input} and here is some possible further explanation: {explanation}",
         )
-        return self._query(user_input=user_input)
-
-
-class TalkerLLM(LLM):
-    def _retrieve_memory(self, user_input: str):
-        return self.memory.retrieve(user_input, n=1, min_similarity=0.0)
-
-    def __init__(
-        self,
-        memory: VectorStore,
-        config: Configuration,
-    ):
-        self.character_description = None
-        self.scene_description = None
-        structure = [
-            "scene",
-            "character",
-            "memory",
-            "history",
-        ]
-        super().__init__(
-            "talker",
-            memory,
-            structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
-        )
-        self.llm_function.add_bool_parameter(
-            "continue", "should the conversation continue?"
-        )
-        self.llm_function.add_string_parameter("response", "dialogue response")
-
-    def set_prompt(self, scene_descr: str, character_descr: str):
-        self.scene_description = scene_descr
-        self.character_description = character_descr
-        # user prompt semantic
-        self.user_prompt.set("scene", f"This is the current setting: {scene_descr}")
-        self.user_prompt.set(
-            "character",
-            f"This is the character(s) you simulate: {character_descr}",
-        )
-        history_content = "This is the conversation so far, continue it:\n"
-        self.user_prompt.set("history", history_content)
-
-    def query(self, user_input):
-        # append current player question
-        history = self.user_prompt.get("history")
-        history += f"Player: {user_input}\n"
-        self.user_prompt.set("history", history)
-        response = self._query(user_input=user_input)
-        if "response" in response.keys():
-            # append model response
-            history += f"Character: {response}\n"
-            self.user_prompt.set("history", history)
-        return response
+        return self._query(user_input=user_input, not_required=["description"])[1]
 
 
 class InteracterLLM(LLM):
@@ -409,101 +317,138 @@ class InteracterLLM(LLM):
         return []
 
     def __init__(
-        self,
-        memory: VectorStore,
-        config: Configuration,
+            self,
+            memory: VectorStore,
+            config: Configuration,
     ):
         structure = [
+            "few-shots",
             "object",
-            "effect",
             "memory",
             "user",
         ]
         super().__init__(
             "interacter",
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
-        self.llm_function = None
+        self.llm_function.add_array_parameter(
+            "indices", "index/indices of the triggered interaction", array_type="number"
+        )
+        self.llm_function.add_string_parameter(
+            "effect", "description of the interaction's effect"
+        )
+        self.llm_function.add_string_parameter(
+            "description", "updated game-object description"
+        )
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(
+                os.path.join(script_dir, "few-shots", "interacter.txt"), "r"
+        ) as file:
+            self.user_prompt.set("few-shots", file.read())
 
-    def set_prompt(self, object_descr: str, effect_descr: str):
+    def set_prompt(self, object_prompt: str):
+        self.user_prompt.set("object", object_prompt)
+
+    def query(self, user_input: str, explanation: str):
         self.user_prompt.set(
-            "object", f"This is object the user wants to interact with: {object_descr}"
+            "user",
+            f"This was the players input: {user_input} and here is some possible further explanation: {explanation}",
         )
+        return self._query(user_input=user_input, not_required=["description"])[1]
+
+
+class TalkerLLM(LLM):
+    def _retrieve_memory(self, user_input: str):
+        return self.memory.retrieve(user_input, n=1, min_similarity=0.0)
+
+    def __init__(
+            self,
+            memory: VectorStore,
+            config: Configuration,
+    ):
+        structure = [
+            "character",
+            "memory",
+            "history",
+        ]
+        super().__init__(
+            "talker",
+            memory,
+            config,
+            structure,
+        )
+        self.llm_function.add_bool_parameter(
+            "continue", "should the conversation continue?"
+        )
+        self.llm_function.add_string_parameter("response", "dialogue response")
+
+    def set_prompt(self, character_prompt: str):
         self.user_prompt.set(
-            "effect",
-            f"The effects which an interaction could have are described here: {effect_descr}",
+            "character",
+            character_prompt,
         )
+        history_content = "This is the conversation so far, continue it:\n"
+        self.user_prompt.set("history", history_content)
 
-    def query(self, user_input):
-        self.user_prompt.set(
-            "user", f"This is what the player wants to do: {user_input}"
-        )
-        return self._query(user_input=user_input)
+    def query(self, user_input: str, _explanation: str):
+        # append current player question
+        history = self.user_prompt.get("history")
+        history += f"Player: {user_input}\n"
+        self.user_prompt.set("history", history)
+        response = self._query(user_input=user_input)[1]
+        if "response" in response.keys():
+            # append model response
+            history += f"Character: {response}\n"
+            self.user_prompt.set("history", history)
+        return response
 
 
-class ThinkerLLM(LLM):
+class QuestionLLM(LLM):
     def _retrieve_memory(self, user_input: str):
         return self.memory.retrieve(user_input, n=3, min_similarity=0.0)
 
-    def __init__(
-        self,
-        memory: VectorStore,
-        config: Configuration,
-    ):
+    def __init__(self, memory: VectorStore, config: Configuration, llm_type: str):
         structure = [
-            "scene",
-            "self",
+            "data",
             "memory",
             "user",
         ]
         super().__init__(
-            "thinker",
+            llm_type,
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
         self.llm_function = None
 
-    def set_prompt(self, scene_descr: str, scene_layout: str, self_descr: str):
-        self.user_prompt.set(
-            "scene", f"This is the current scene: {scene_descr} {scene_layout}"
-        )
-        self.user_prompt.set(
-            "self",
-            f"Here is some information about the player's character: {self_descr}",
-        )
+    def set_prompt(self, data: str):
+        self.user_prompt.set("data", data)
 
-    def query(self, user_input):
+    def query(self, user_input: str, explanation: str):
         self.user_prompt.set(
             "user",
-            f"This is the player's input: {user_input}",
+            f"This was the players input: {user_input} and here is some possible further explanation: {explanation}",
         )
-        return self._query(user_input=user_input)
+        return self._query(user_input=user_input)[0]
 
 
 class ActorLLM(LLM):
     def _retrieve_memory(self, user_input: str):
-        history = set(self.memory.retrieve_last(n=5))
-        other = set(self.memory.retrieve(user_input, n=3, min_similarity=0.3))
-        history.update(other)
-        result = list(history)
-        map(lambda x: x[0], result)
+        history = set(self.memory.retrieve_last(n=3))
+        other = set(self.memory.retrieve(user_input, n=2, min_similarity=0.3))
+        history = history.union(other)
+        result = [a for a, b in list(history)]
         return result
 
     def __init__(
-        self,
-        memory: VectorStore,
-        config: Configuration,
+            self,
+            memory: VectorStore,
+            config: Configuration,
     ):
         structure = [
+            "few-shots",
             "memory",
             "scene",
             "actions",
@@ -512,36 +457,30 @@ class ActorLLM(LLM):
         super().__init__(
             "actor",
             memory,
+            config,
             structure,
-            config.gpt_version,
-            config.openai_api_key,
-            config.save_traffic,
-            config.temperature,
         )
+        self.llm_function.add_string_parameter("explanation", "explain the action")
         self.llm_function.add_string_parameter("action", "chosen action")
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        with open(
+                os.path.join(script_dir, "few-shots", "actor.txt"), "r"
+        ) as file:
+            self.user_prompt.set("few-shots", file.read())
 
-    def set_prompt(self, scene_descr: str, thing_names: list[str]):
-        scene_content = f"This is the current scene: {scene_descr}"
-        scene_content += (
-            f"These are the names of all objects/characters inside the scene:\n"
-        )
-        scene_content += " ".join(thing_names)
-        self.user_prompt.set("scene", scene_content)
+    def set_prompt(self, scene_descr: str):
+        self.user_prompt.set("scene", scene_descr)
 
         action_content = (
-            "What follows now is a list of actions which the player can take:\n"
+            "What follows is a list of actions which the player can take:\n"
         )
         action_content += (
-            "When the player wants to find out more about his surroundings, you respond with"
-            '"explore"\n'
+            "When the player wants to know more about or interact with a specific game-object called <name>, "
+            'you respond with "describe_<name>" or "interact_<name>"\n'
         )
         action_content += (
-            "When the player wants to know more about a specific object/character called <name>, "
-            'you respond with "describe_<name>"\n'
-        )
-        action_content += (
-            "When the player wants to talk to some character or interact with something in the scene, you respond with "
-            '"interact_<name>"\n'
+            "When the player wants to know more about or interact with the scene, "
+            'you respond with "describe_scene" or "interact_scene"\n'
         )
         action_content += (
             "If the player's input is in some other way game-related, or he just wants to think out load or troll the "
@@ -557,7 +496,7 @@ class ActorLLM(LLM):
     def query(self, user_input: str):
         self.user_prompt.set(
             "user",
-            f"This was the player's input, now determine his action: {user_input}",
+            f"This was the player's input, now reason about and determine his action: {user_input}",
         )
-        result: dict = self._query(user_input=user_input)
-        return result["action"]
+        result: dict = self._query(user_input=user_input)[1]
+        return result["action"], result["explanation"]

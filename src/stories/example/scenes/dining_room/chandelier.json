@@ -1,0 +1,30 @@
+{
+  "name": "chandelier",
+  "summary": "A brass chandelier with real candles.",
+  "description": "This is a dinner table in the center of the dining room.",
+  "facts": [
+    {
+      "description": "The brass is covered in soot."
+    },
+    {
+      "description": "None of the candles are burning."
+    },
+    {
+      "description": "Wax has collected on the candle holders."
+    }
+  ],
+  "interactions": [
+    {
+      "description": "The player tries to swing the chandelier",
+      "effect": "It swings and a candle drops on his head."
+    },
+    {
+      "description": "He tries to remove it from the ceiling.",
+      "effect": "No chance."
+    },
+    {
+      "description": "He smells the candles.",
+      "effect": "They smell very good."
+    }
+  ]
+}
